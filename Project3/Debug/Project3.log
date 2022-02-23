@@ -1,0 +1,51 @@
+﻿  FrameResource.cpp
+E:\Users\Jacob\Desktop\AGP-Projects\Common\UploadBuffer.h(24): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Common\UploadBuffer.h(9): message : while compiling class template member function 'UploadBuffer<PassConstants>::UploadBuffer(ID3D12Device *,UINT,bool)'
+E:\Applications\VisualStudio\VC\Tools\MSVC\14.29.30133\include\memory(3416): message : see reference to function template instantiation 'UploadBuffer<PassConstants>::UploadBuffer(ID3D12Device *,UINT,bool)' being compiled
+E:\Applications\VisualStudio\VC\Tools\MSVC\14.29.30133\include\memory(3119): message : see reference to class template instantiation 'UploadBuffer<PassConstants>' being compiled
+E:\Applications\VisualStudio\VC\Tools\MSVC\14.29.30133\include\memory(3118): message : while compiling class template member function 'void std::default_delete<UploadBuffer<PassConstants>>::operator ()(_Ty *) noexcept const'
+          with
+          [
+              _Ty=UploadBuffer<PassConstants>
+          ]
+E:\Applications\VisualStudio\VC\Tools\MSVC\14.29.30133\include\memory(3230): message : see reference to function template instantiation 'void std::default_delete<UploadBuffer<PassConstants>>::operator ()(_Ty *) noexcept const' being compiled
+          with
+          [
+              _Ty=UploadBuffer<PassConstants>
+          ]
+E:\Applications\VisualStudio\VC\Tools\MSVC\14.29.30133\include\memory(3157): message : see reference to class template instantiation 'std::default_delete<UploadBuffer<PassConstants>>' being compiled
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project-2\FrameResource.h(82): message : see reference to class template instantiation 'std::unique_ptr<UploadBuffer<PassConstants>,std::default_delete<UploadBuffer<PassConstants>>>' being compiled
+  Camera.cpp
+  d3dApp.cpp
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dApp.cpp(199): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dApp.cpp(216): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dApp.cpp(547,77): error C2664: 'HANDLE CreateEventExW(LPSECURITY_ATTRIBUTES,LPCWSTR,DWORD,DWORD)': cannot convert argument 2 from 'bool' to 'LPCWSTR'
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dApp.cpp(547,47): message : Conversion from integral type to pointer type requires reinterpret_cast, C-style cast or function-style cast
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\um\synchapi.h(641,1): message : see declaration of 'CreateEventExW'
+  d3dUtil.cpp
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dUtil.cpp(30,5): warning C4244: 'argument': conversion from 'std::streamoff' to 'SIZE_T', possible loss of data
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dUtil.cpp(48): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dUtil.cpp(58): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dUtil.cpp(70,32): warning C4244: '=': conversion from 'UINT64' to 'LONG_PTR', possible loss of data
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dUtil.cpp(76): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dUtil.cpp(79): error C2102: '&' requires l-value
+  DDSTextureLoader.cpp
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1273): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1292): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1294): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1305): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1311): error C2102: '&' requires l-value
+  GameTimer.cpp
+  GeometryGenerator.cpp
+  MathHelper.cpp
+  Main.cpp
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(172,77): error C2664: 'HANDLE CreateEventExW(LPSECURITY_ATTRIBUTES,LPCWSTR,DWORD,DWORD)': cannot convert argument 2 from 'bool' to 'LPCWSTR'
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(172,47): message : Conversion from integral type to pointer type requires reinterpret_cast, C-style cast or function-style cast
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\um\synchapi.h(641,1): message : see declaration of 'CreateEventExW'
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(208): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(200): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(230): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(353): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(354): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(355): error C2102: '&' requires l-value
+  Generating Code...
