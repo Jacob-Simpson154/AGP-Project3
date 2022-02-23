@@ -15,7 +15,6 @@ E:\Applications\VisualStudio\VC\Tools\MSVC\14.29.30133\include\memory(3230): mes
           ]
 E:\Applications\VisualStudio\VC\Tools\MSVC\14.29.30133\include\memory(3157): message : see reference to class template instantiation 'std::default_delete<UploadBuffer<PassConstants>>' being compiled
 E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project-2\FrameResource.h(82): message : see reference to class template instantiation 'std::unique_ptr<UploadBuffer<PassConstants>,std::default_delete<UploadBuffer<PassConstants>>>' being compiled
-  Camera.cpp
   d3dApp.cpp
 E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dApp.cpp(199): error C2102: '&' requires l-value
 E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\d3dApp.cpp(216): error C2102: '&' requires l-value
@@ -35,17 +34,13 @@ E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1292): 
 E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1294): error C2102: '&' requires l-value
 E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1305): error C2102: '&' requires l-value
 E:\Users\Jacob\Desktop\AGP-Projects\Projects\Common\DDSTextureLoader.cpp(1311): error C2102: '&' requires l-value
-  GameTimer.cpp
-  GeometryGenerator.cpp
-  MathHelper.cpp
-  Main.cpp
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(172,77): error C2664: 'HANDLE CreateEventExW(LPSECURITY_ATTRIBUTES,LPCWSTR,DWORD,DWORD)': cannot convert argument 2 from 'bool' to 'LPCWSTR'
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(172,47): message : Conversion from integral type to pointer type requires reinterpret_cast, C-style cast or function-style cast
-C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0\um\synchapi.h(641,1): message : see declaration of 'CreateEventExW'
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(208): error C2102: '&' requires l-value
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(200): error C2102: '&' requires l-value
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(230): error C2102: '&' requires l-value
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(353): error C2102: '&' requires l-value
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(354): error C2102: '&' requires l-value
-E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Main.cpp(355): error C2102: '&' requires l-value
+  Application.cpp
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(264): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(256): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(288): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(448): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(449): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(450): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(763): error C2102: '&' requires l-value
+E:\Users\Jacob\Desktop\AGP-Projects\Projects\AGP-Project3\Project3\Application.cpp(764): error C2102: '&' requires l-value
   Generating Code...

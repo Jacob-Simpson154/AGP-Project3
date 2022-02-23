@@ -12,13 +12,62 @@ using namespace DirectX::PackedVector;
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
 
-class Main : public D3DApp
+const int gNumFrameResources = 3;
+
+struct RenderItem
+{
+	RenderItem() = default;
+	RenderItem(const RenderItem & rhs) = delete;
+	
+	/// <summary>
+	/// Controls visibility
+	/// </summary>
+	bool shouldRender = true;
+	/// <summary>
+	/// This items material
+	/// </summary>
+	Material* material = nullptr;
+	/// <summary>
+	/// This items geometry
+	/// </summary>
+	MeshGeometry* geometry = nullptr;
+	/// <summary>
+	/// Objects index, should increment 
+	/// per render item
+	/// </summary>
+	UINT objectCBIndex = -1;
+	/// <summary>
+	/// Position in world
+	/// </summary>
+	XMFLOAT4X4 position = MathHelper::Identity4x4();
+	XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
+
+	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
+	// Because we have an object cbuffer for each FrameResource, we have to apply the
+	// update to each FrameResource.  Thus, when we modify obect data we should set 
+	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
+	int NumFramesDirty = gNumFrameResources;
+	// Primitive topology.
+	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	// DrawIndexedInstanced parameters.
+	UINT IndexCount = 0;
+	UINT StartIndexLocation = 0;
+	int BaseVertexLocation = 0;
+};
+enum class RenderLayer : int
+{
+	World = 0,
+	Enemy,
+	Count
+};
+
+class Application : public D3DApp
 {
 public:
-    Main(HINSTANCE hInstance);
-    Main(const Main& rhs) = delete;
-    Main& operator=(const Main& rhs) = delete;
-    ~Main();
+    Application(HINSTANCE hInstance);
+    Application(const Application& rhs) = delete;
+    Application& operator=(const Application& rhs) = delete;
+    ~Application();
 
     virtual bool Initialize()override;
 
@@ -41,13 +90,12 @@ private:
     void BuildRootSignature();
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
-    void BuildCarGeometry();
-    void BuildButtonGeometry();
+    void BuildGeometry();
     void BuildPSOs();
     void BuildFrameResources();
     void BuildMaterials();
     void BuildRenderItems();
-    void DrawRenderItems(ID3D12GraphicsCommandList* cmdList);
+    void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 
     std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
@@ -70,11 +118,17 @@ private:
     std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSOs;
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-    PassConstants mMainPassCB;
+	
+	PassConstants mMainPassCB;
 
     Camera mCamera;
 
     POINT mLastMousePos;
+
+	//all existing items
+	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
+
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -87,11 +141,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
 	try
 	{
-		Main Project3app(hInstance);
-		if (!Project3app.Initialize())
+		Application theApp(hInstance);
+		if (!theApp.Initialize())
 			return 0;
 
-		return Project3app.Run();
+		return theApp.Run();
 	}
 	catch (DxException& e)
 	{
@@ -100,18 +154,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	}
 }
 
-Main::Main(HINSTANCE hInstance)
+Application::Application(HINSTANCE hInstance)
 	: D3DApp(hInstance)
 {
 }
 
-Main::~Main()
+Application::~Application()
 {
 	if (md3dDevice != nullptr)
 		FlushCommandQueue();
 }
 
-bool Main::Initialize()
+bool Application::Initialize()
 {
 	if (!D3DApp::Initialize())
 		return false;
@@ -132,8 +186,7 @@ bool Main::Initialize()
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
-	BuildCarGeometry();
-	BuildButtonGeometry();
+	BuildGeometry();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -150,14 +203,14 @@ bool Main::Initialize()
 	return true;
 }
 
-void Main::OnResize()
+void Application::OnResize()
 {
 	D3DApp::OnResize();
 
 	mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 }
 
-void Main::Update(const GameTimer& gt)
+void Application::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
 
@@ -169,7 +222,7 @@ void Main::Update(const GameTimer& gt)
 	// If not, wait until the GPU has completed commands up to this fence point.
 	if (mCurrFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrFrameResource->Fence)
 	{
-		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+		HANDLE eventHandle = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, eventHandle));
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
@@ -181,7 +234,10 @@ void Main::Update(const GameTimer& gt)
 	UpdateMainPassCB(gt);
 }
 
-void Main::Draw(const GameTimer& gt)
+/// <summary>
+/// Draw all objects, includes PSO swapped
+/// </summary>
+void Application::Draw(const GameTimer& gt)
 {
 	auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
 
@@ -225,6 +281,8 @@ void Main::Draw(const GameTimer& gt)
 	// The root signature knows how many descriptors are expected in the table.
 	mCommandList->SetGraphicsRootDescriptorTable(3, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
+
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -250,7 +308,10 @@ void Main::Draw(const GameTimer& gt)
 	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
-void Main::OnMouseDown(WPARAM btnState, int x, int y)
+/// <summary>
+/// Mouse input click
+/// </summary>
+void Application::OnMouseDown(WPARAM btnState, int x, int y)
 {
 	if ((btnState & MK_LBUTTON) != 0)
 	{
@@ -265,12 +326,18 @@ void Main::OnMouseDown(WPARAM btnState, int x, int y)
 	}
 }
 
-void Main::OnMouseUp(WPARAM btnState, int x, int y)
+/// <summary>
+/// Mouse input click (release)
+/// </summary>
+void Application::OnMouseUp(WPARAM btnState, int x, int y)
 {
 	ReleaseCapture();
 }
 
-void Main::OnMouseMove(WPARAM btnState, int x, int y)
+/// <summary>
+/// Mouse movement
+/// </summary>
+void Application::OnMouseMove(WPARAM btnState, int x, int y)
 {
 	if ((btnState & MK_LBUTTON) != 0)
 	{
@@ -286,7 +353,10 @@ void Main::OnMouseMove(WPARAM btnState, int x, int y)
 	mLastMousePos.y = y;
 }
 
-void Main::OnKeyboardInput(const GameTimer& gt)
+/// <summary>
+/// Keyboard input
+/// </summary>
+void Application::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
 
@@ -306,18 +376,40 @@ void Main::OnKeyboardInput(const GameTimer& gt)
 	mCamera.UpdateViewMatrix();
 }
 
-void Main::AnimateMaterials(const GameTimer& gt)
+/// <summary>
+/// Animated materials (i.e. scrolling textures)
+/// </summary>
+void Application::AnimateMaterials(const GameTimer& gt)
 {
 
 }
 
-void Main::UpdateObjectCBs(const GameTimer& gt)
+void Application::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
+	for (auto& e : mAllRitems)
+	{
+		// Only update the cbuffer data if the constants have changed.  
+		// This needs to be tracked per frame resource.
+		if (e->NumFramesDirty > 0)
+		{
+			XMMATRIX world = XMLoadFloat4x4(&e->position);
+			XMMATRIX texTransform = XMLoadFloat4x4(&e->texTransform);
 
+			ObjectConstants objConstants;
+			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
+			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
+			objConstants.MaterialIndex = e->material->MatCBIndex;
+
+			currObjectCB->CopyData(e->objectCBIndex, objConstants);
+
+			// Next FrameResource need to be updated too.
+			e->NumFramesDirty--;
+		}
+	}
 }
 
-void Main::UpdateMaterialBuffer(const GameTimer& gt)
+void Application::UpdateMaterialBuffer(const GameTimer& gt)
 {
 	auto currMaterialBuffer = mCurrFrameResource->MaterialBuffer.get();
 	for (auto& e : mMaterials)
@@ -344,7 +436,10 @@ void Main::UpdateMaterialBuffer(const GameTimer& gt)
 	}
 }
 
-void Main::UpdateMainPassCB(const GameTimer& gt)
+/// <summary>
+/// Updates camera information, and lighting
+/// </summary>
+void Application::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = mCamera.GetView();
 	XMMATRIX proj = mCamera.GetProj();
@@ -379,8 +474,13 @@ void Main::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-void Main::LoadTextures()
+/// <summary>
+/// Loads texture files from directory
+/// </summary>
+void Application::LoadTextures()
 {
+	//Use this texture as example
+
 	auto defaultDiffuseTex = std::make_unique<Texture>();
 	defaultDiffuseTex->Name = "defaultDiffuseTex";
 	defaultDiffuseTex->Filename = L"../../Textures/white1x1.dds";
@@ -391,7 +491,7 @@ void Main::LoadTextures()
 	mTextures[defaultDiffuseTex->Name] = std::move(defaultDiffuseTex);
 }
 
-void Main::BuildRootSignature()
+void Application::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4, 0, 0);
@@ -432,7 +532,7 @@ void Main::BuildRootSignature()
 		IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void Main::BuildDescriptorHeaps()
+void Application::BuildDescriptorHeaps()
 {
 	//
 	// Create the SRV heap.
@@ -460,7 +560,7 @@ void Main::BuildDescriptorHeaps()
 	md3dDevice->CreateShaderResourceView(defaultDiffuseTex.Get(), &srvDesc, hDescriptor);
 }
 
-void Main::BuildShadersAndInputLayout()
+void Application::BuildShadersAndInputLayout()
 {
 	const D3D_SHADER_MACRO alphaTestDefines[] =
 	{
@@ -479,107 +579,15 @@ void Main::BuildShadersAndInputLayout()
 	};
 }
 
-void Main::BuildCarGeometry()
+/// <summary>
+/// Construct all geometry, needs to be done prior to run time
+/// </summary>
+void Application::BuildGeometry()
 {
-	std::ifstream fin("Models/car.txt");
-
-	if (!fin)
-	{
-		MessageBox(0, L"Models/car.txt not found.", 0, 0);
-		return;
-	}
-
-	UINT vcount = 0;
-	UINT tcount = 0;
-	std::string ignore;
-
-	fin >> ignore >> vcount;
-	fin >> ignore >> tcount;
-	fin >> ignore >> ignore >> ignore >> ignore;
-
-	XMFLOAT3 vMinf3(+MathHelper::Infinity, +MathHelper::Infinity, +MathHelper::Infinity);
-	XMFLOAT3 vMaxf3(-MathHelper::Infinity, -MathHelper::Infinity, -MathHelper::Infinity);
-
-	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-	std::vector<Vertex> vertices(vcount);
-	for (UINT i = 0; i < vcount; ++i)
-	{
-		fin >> vertices[i].Pos.x >> vertices[i].Pos.y >> vertices[i].Pos.z;
-		fin >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
-
-		XMVECTOR P = XMLoadFloat3(&vertices[i].Pos);
-
-		vertices[i].TexC = { 0.0f, 0.0f };
-
-		vMin = XMVectorMin(vMin, P);
-		vMax = XMVectorMax(vMax, P);
-	}
-
-	BoundingBox bounds;
-	XMStoreFloat3(&bounds.Center, 0.5f * (vMin + vMax));
-	XMStoreFloat3(&bounds.Extents, 0.5f * (vMax - vMin));
-
-	fin >> ignore;
-	fin >> ignore;
-	fin >> ignore;
-
-	std::vector<std::int32_t> indices(3 * tcount);
-
-	for (UINT i = 0; i < tcount; ++i)
-	{
-		fin >> indices[i * 3 + 0] >> indices[i * 3 + 1] >> indices[i * 3 + 2];
-	}
-
-	fin.close();
-
+	//Build all geometry here
 	//
-	// Pack the indices of all the meshes into one index buffer.
-	//
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::int32_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "carGeo";
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Vertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-	submesh.Bounds = bounds;
-
-	geo->DrawArgs["car"] = submesh;
-
-	mGeometries[geo->Name] = std::move(geo);
-}
-
-void Main::BuildButtonGeometry()
-{
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
-	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(1.0f, 1.0f, 1.0f, 10, 3);
-
-	//Box
 	{
 		SubmeshGeometry boxSubmesh;
 		boxSubmesh.IndexCount = (UINT)box.Indices32.size();
@@ -624,55 +632,9 @@ void Main::BuildButtonGeometry()
 
 		mGeometries[geo->Name] = std::move(geo);
 	}
-
-	//Cylinder
-	{
-		SubmeshGeometry cylinderSubmesh;
-		cylinderSubmesh.IndexCount = (UINT)cylinder.Indices32.size();
-		cylinderSubmesh.StartIndexLocation = 0;
-		cylinderSubmesh.BaseVertexLocation = 0;
-
-		std::vector<Vertex> vertices(cylinder.Vertices.size());
-
-		for (size_t i = 0; i < cylinder.Vertices.size(); ++i)
-		{
-			vertices[i].Pos = cylinder.Vertices[i].Position;
-			vertices[i].Normal = cylinder.Vertices[i].Normal;
-			vertices[i].TexC = cylinder.Vertices[i].TexC;
-		}
-
-		std::vector<std::uint16_t> indices = cylinder.GetIndices16();
-
-		const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-		const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-		auto geo = std::make_unique<MeshGeometry>();
-		geo->Name = "cylinderGeo";
-
-		ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-		CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-		ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-		CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-		geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-			mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-		geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-			mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-		geo->VertexByteStride = sizeof(Vertex);
-		geo->VertexBufferByteSize = vbByteSize;
-		geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-		geo->IndexBufferByteSize = ibByteSize;
-
-		geo->DrawArgs["cylinder"] = cylinderSubmesh;
-
-		mGeometries[geo->Name] = std::move(geo);
-	}
 }
 
-void Main::BuildPSOs()
+void Application::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
@@ -733,73 +695,84 @@ void Main::BuildPSOs()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&highlightPsoDesc, IID_PPV_ARGS(&mPSOs["highlight"])));
 }
 
-void Main::BuildFrameResources()
+void Application::BuildFrameResources()
 {
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
-
+		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
+			1, (UINT)mAllRitems.size(), (UINT)mMaterials.size()));
 	}
 }
 
-void Main::BuildMaterials()
+/// <summary>
+/// Constructs materials from textures, to use on geometry
+/// </summary>
+void Application::BuildMaterials()
 {
-	auto gray0 = std::make_unique<Material>();
-	gray0->Name = "gray0";
-	gray0->MatCBIndex = 0;
-	gray0->DiffuseSrvHeapIndex = 0;
-	gray0->DiffuseAlbedo = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
-	gray0->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
-	gray0->Roughness = 0.0f;
+	auto example = std::make_unique<Material>();
+	example->Name = "example";
+	example->MatCBIndex = 0;
+	example->DiffuseSrvHeapIndex = 0;
+	example->DiffuseAlbedo = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+	example->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
+	example->Roughness = 0.0f;
 
-	auto highlight0 = std::make_unique<Material>();
-	highlight0->Name = "Red";
-	highlight0->MatCBIndex = 1;
-	highlight0->DiffuseSrvHeapIndex = 0;
-	highlight0->DiffuseAlbedo = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f);
-	highlight0->FresnelR0 = XMFLOAT3(0.06f, 0.06f, 0.06f);
-	highlight0->Roughness = 0.0f;
-
-	auto highlight1 = std::make_unique<Material>();
-	highlight1->Name = "Green";
-	highlight1->MatCBIndex = 2;
-	highlight1->DiffuseSrvHeapIndex = 0;
-	highlight1->DiffuseAlbedo = XMFLOAT4(0.0f, 1.0f, 0.0f, 0.6f);
-	highlight1->FresnelR0 = XMFLOAT3(0.06f, 0.06f, 0.06f);
-	highlight1->Roughness = 0.0f;
-
-	auto highlight2 = std::make_unique<Material>();
-	highlight2->Name = "Blue";
-	highlight2->MatCBIndex = 3;
-	highlight2->DiffuseSrvHeapIndex = 0;
-	highlight2->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 1.0f, 0.6f);
-	highlight2->FresnelR0 = XMFLOAT3(0.06f, 0.06f, 0.06f);
-	highlight2->Roughness = 0.0f;
-
-
-
-
-	mMaterials["gray0"] = std::move(gray0);
-	mMaterials["Red"] = std::move(highlight0);
-	mMaterials["Green"] = std::move(highlight1);
-	mMaterials["Blue"] = std::move(highlight2);
+	mMaterials["example"] = std::move(example);
 }
 
-void Main::BuildRenderItems()
+/// <summary>
+/// Build render items, we may use different structures which would require different functions
+/// </summary>
+void Application::BuildRenderItems()
 {
-	
+	//Build render items here
+
+	//This is an example
+	auto cubeRItem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&cubeRItem->position, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 0.0f, 0.0f));
+	XMStoreFloat4x4(&cubeRItem->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	cubeRItem->objectCBIndex = 0;
+	cubeRItem->material = mMaterials["example"].get();
+	cubeRItem->geometry = mGeometries["boxGeo"].get();
+	cubeRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	cubeRItem->IndexCount = cubeRItem->geometry->DrawArgs["cube"].IndexCount;
+	cubeRItem->StartIndexLocation = cubeRItem->geometry->DrawArgs["cube"].StartIndexLocation;
+	cubeRItem->BaseVertexLocation = cubeRItem->geometry->DrawArgs["cube"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::World].push_back(cubeRItem.get());
+	mAllRitems.push_back(std::move(cubeRItem));
+
 }
 
-void Main::DrawRenderItems(ID3D12GraphicsCommandList* cmdList)
+/// <summary>
+/// Draw render items, we may use different structures which would require different functions
+/// </summary>
+void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
 {
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 
-	// For each render item...
-	
+	//Draw items block here
+	for (size_t i = 0; i < ritems.size(); ++i)
+	{
+		auto ri = ritems[i];
+
+		if (ri->shouldRender == false)
+			continue;
+
+		cmdList->IASetVertexBuffers(0, 1, &ri->geometry->VertexBufferView());
+		cmdList->IASetIndexBuffer(&ri->geometry->IndexBufferView());
+		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
+
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->objectCBIndex * objCBByteSize;
+
+		cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+
+		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+	}
 }
 
-std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Main::GetStaticSamplers()
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Application::GetStaticSamplers()
 {
 	// Applications usually only need a handful of samplers.  So just define them all up front
 	// and keep them available as part of the root signature.  
