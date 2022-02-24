@@ -257,7 +257,7 @@ void Application::Draw(const GameTimer& gt)
 		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 	// Clear the back buffer and depth buffer.
-	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
+	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::SteelBlue, 0, nullptr);
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
@@ -713,7 +713,7 @@ void Application::BuildMaterials()
 	example->Name = "example";
 	example->MatCBIndex = 0;
 	example->DiffuseSrvHeapIndex = 0;
-	example->DiffuseAlbedo = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+	example->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	example->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
 	example->Roughness = 0.0f;
 
@@ -735,9 +735,9 @@ void Application::BuildRenderItems()
 	cubeRItem->material = mMaterials["example"].get();
 	cubeRItem->geometry = mGeometries["boxGeo"].get();
 	cubeRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	cubeRItem->IndexCount = cubeRItem->geometry->DrawArgs["cube"].IndexCount;
-	cubeRItem->StartIndexLocation = cubeRItem->geometry->DrawArgs["cube"].StartIndexLocation;
-	cubeRItem->BaseVertexLocation = cubeRItem->geometry->DrawArgs["cube"].BaseVertexLocation;
+	cubeRItem->IndexCount = cubeRItem->geometry->DrawArgs["box"].IndexCount;
+	cubeRItem->StartIndexLocation = cubeRItem->geometry->DrawArgs["box"].StartIndexLocation;
+	cubeRItem->BaseVertexLocation = cubeRItem->geometry->DrawArgs["box"].BaseVertexLocation;
 	mRitemLayer[(int)RenderLayer::World].push_back(cubeRItem.get());
 	mAllRitems.push_back(std::move(cubeRItem));
 
