@@ -4,6 +4,8 @@
 #include "../../Common/GeometryGenerator.h"
 #include "../../Common/Camera.h"
 #include "FrameResource.h"
+#include "Weapon.h"
+#include "Boss.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -96,7 +98,7 @@ private:
     void BuildMaterials();
     void BuildRenderItems();
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
-	void Raycast(int x, int y);
+	void Shoot();
     std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
 private:
@@ -129,7 +131,10 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 
+
 	BoundingBox bossBox;
+	Boss bossStats;
+	Weapon currentGun;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -182,6 +187,9 @@ bool Application::Initialize()
 		XMFLOAT3(5.0f, 4.0f, -15.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f));
+
+	bossStats.Setup(0, 100);
+	currentGun.Setup("Pistol", 25);
 
 	LoadTextures();
 	BuildRootSignature();
@@ -324,7 +332,7 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
-		Raycast(0,0);
+		Shoot();
 	}
 }
 
@@ -808,7 +816,7 @@ void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 	}
 }
 
-void Application::Raycast(int x, int y)
+void Application::Shoot()
 {
 	XMFLOAT4X4 P = mCamera.GetProj4x4f();
 	float vx = (+2.0f * (mClientWidth / 2) / mClientWidth - 1.0f) / P(0, 0);
@@ -841,8 +849,12 @@ void Application::Raycast(int x, int y)
 		float tmin = 0.0f;
 		if (bossBox.Intersects(rayOrigin, rayDir, tmin))
 		{
-			ri->material = mMaterials["Grey"].get();
-			ri->NumFramesDirty = gNumFrameResources;
+			bool isDead = bossStats.DealDamage(currentGun.GetDamage());
+			if (isDead == true)
+			{
+				ri->material = mMaterials["Grey"].get();
+				ri->NumFramesDirty = gNumFrameResources;
+			}
 		}
 	}
 
