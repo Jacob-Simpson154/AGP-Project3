@@ -96,7 +96,7 @@ private:
     void BuildMaterials();
     void BuildRenderItems();
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
-
+	void Raycast(int x, int y);
     std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
 private:
@@ -129,6 +129,7 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 
+	BoundingBox bossBox;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -282,7 +283,8 @@ void Application::Draw(const GameTimer& gt)
 	mCommandList->SetGraphicsRootDescriptorTable(3, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
-
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
+	
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -322,7 +324,7 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
-
+		Raycast(0,0);
 	}
 }
 
@@ -709,15 +711,26 @@ void Application::BuildFrameResources()
 /// </summary>
 void Application::BuildMaterials()
 {
-	auto example = std::make_unique<Material>();
-	example->Name = "example";
-	example->MatCBIndex = 0;
-	example->DiffuseSrvHeapIndex = 0;
-	example->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	example->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
-	example->Roughness = 0.0f;
+	auto Grey01 = std::make_unique<Material>();
+	Grey01->Name = "Grey";
+	Grey01->MatCBIndex = 0;
+	Grey01->DiffuseSrvHeapIndex = 0;
+	Grey01->DiffuseAlbedo = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
+	Grey01->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
+	Grey01->Roughness = 0.0f;
 
-	mMaterials["example"] = std::move(example);
+	auto Red01 = std::make_unique<Material>();
+	Red01->Name = "Red";
+	Red01->MatCBIndex = 1;
+	Red01->DiffuseSrvHeapIndex = 0;
+	Red01->DiffuseAlbedo = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f);
+	Red01->FresnelR0 = XMFLOAT3(0.06f, 0.06f, 0.06f);
+	Red01->Roughness = 0.0f;
+
+
+	mMaterials["Grey"] = std::move(Grey01);
+	mMaterials["Red"] = std::move(Red01);
+
 }
 
 /// <summary>
@@ -726,20 +739,43 @@ void Application::BuildMaterials()
 void Application::BuildRenderItems()
 {
 	//Build render items here
+	UINT objectCBIndex = 0;
+	//This is the floor
+	auto floorRItem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&floorRItem->position, XMMatrixScaling(25.0f, 1.0f, 25.0f) * XMMatrixTranslation(0.0f, -1.0f, 0.0f));
+	XMStoreFloat4x4(&floorRItem->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	floorRItem->objectCBIndex = objectCBIndex;
+	objectCBIndex++;
+	floorRItem->material = mMaterials["Grey"].get();
+	floorRItem->geometry = mGeometries["boxGeo"].get();
+	floorRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	floorRItem->IndexCount = floorRItem->geometry->DrawArgs["box"].IndexCount;
+	floorRItem->StartIndexLocation = floorRItem->geometry->DrawArgs["box"].StartIndexLocation;
+	floorRItem->BaseVertexLocation = floorRItem->geometry->DrawArgs["box"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::World].push_back(floorRItem.get());
+	mAllRitems.push_back(std::move(floorRItem));
+	
+	float posX = 0.0f;
+	float scaleX = 1.0f;
+	float posY = 1.0f;
+	float scaleY = 5.0f;
+	float posZ = 0.0f;
+	float scaleZ = 1.0f;
+	auto bossRItem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&bossRItem->position, XMMatrixScaling(scaleX, scaleY, scaleZ) * XMMatrixTranslation(posX, posY, posZ));
+	XMStoreFloat4x4(&bossRItem->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	bossRItem->objectCBIndex = objectCBIndex;
+	objectCBIndex++;
+	bossRItem->material = mMaterials["Red"].get();
+	bossRItem->geometry = mGeometries["boxGeo"].get();
+	bossRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bossRItem->IndexCount = bossRItem->geometry->DrawArgs["box"].IndexCount;
+	bossRItem->StartIndexLocation = bossRItem->geometry->DrawArgs["box"].StartIndexLocation;
+	bossRItem->BaseVertexLocation = bossRItem->geometry->DrawArgs["box"].BaseVertexLocation;
+	mRitemLayer[(int)RenderLayer::Enemy].push_back(bossRItem.get());
+	mAllRitems.push_back(std::move(bossRItem));
+	bossBox = BoundingBox(XMFLOAT3(posX,posY,posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
 
-	//This is an example
-	auto cubeRItem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&cubeRItem->position, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-	XMStoreFloat4x4(&cubeRItem->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	cubeRItem->objectCBIndex = 0;
-	cubeRItem->material = mMaterials["example"].get();
-	cubeRItem->geometry = mGeometries["boxGeo"].get();
-	cubeRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	cubeRItem->IndexCount = cubeRItem->geometry->DrawArgs["box"].IndexCount;
-	cubeRItem->StartIndexLocation = cubeRItem->geometry->DrawArgs["box"].StartIndexLocation;
-	cubeRItem->BaseVertexLocation = cubeRItem->geometry->DrawArgs["box"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::World].push_back(cubeRItem.get());
-	mAllRitems.push_back(std::move(cubeRItem));
 
 }
 
@@ -770,6 +806,46 @@ void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}
+}
+
+void Application::Raycast(int x, int y)
+{
+	XMFLOAT4X4 P = mCamera.GetProj4x4f();
+	float vx = (+2.0f * (mClientWidth / 2) / mClientWidth - 1.0f) / P(0, 0);
+	float vy = (-2.0f * (mClientHeight / 2) / mClientHeight + 1.0f) / P(1, 1);
+
+	XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+	XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);
+	XMMATRIX V = mCamera.GetView();
+	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(V), V);
+
+	for (auto ri : mRitemLayer[(int)RenderLayer::Enemy])
+	{
+		auto geo = ri->geometry;
+		if (ri->shouldRender == false)
+			continue;
+
+		XMMATRIX W = XMLoadFloat4x4(&ri->position);
+		XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
+
+		// Tranform ray to vi space of Mesh.
+		XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
+
+		rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
+		rayDir = XMVector3TransformNormal(rayDir, toLocal);
+
+		// Make the ray direction unit length for the intersection tests.
+		rayDir = XMVector3Normalize(rayDir);
+
+		//Ray/AABB test to see if ray is close to mesh
+		float tmin = 0.0f;
+		if (bossBox.Intersects(rayOrigin, rayDir, tmin))
+		{
+			ri->material = mMaterials["Grey"].get();
+			ri->NumFramesDirty = gNumFrameResources;
+		}
+	}
+
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Application::GetStaticSamplers()
