@@ -13,6 +13,30 @@
 //
 //Increment MatCBIndex per material
 
+//How to load geometry from file
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+// How to build Materials
+//Go to: Application::BuildMaterials()
+// //
+//		int matIndex = 0;
+//
+//		BuildMaterial(matIndex, 0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
+//		BuildMaterial(matIndex, 0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+//
+//		// todo: replace above with below if the Material names are same as texture names
+//		/*std::for_each(mTextures.begin(), mTextures.end(), [&](auto& p)
+//			{
+//				BuildMaterial(matIndex, matIndex, p.first);
+//			});*/
 
 //How to create geometry
 //Go to Application::BuildGeometry
@@ -66,23 +90,33 @@
 //		}
 //
 
-//How to render item
-//Go to Application::BuildRenderItems
-//Use this example:
-//
-//		auto cubeRItem = std::make_unique<RenderItem>();
-//		XMStoreFloat4x4(&cubeRItem->position, XMMatrixScaling(1.0f, 1.0f, 1.0f)* XMMatrixTranslation(0.0f, 0.0f, 0.0f));
-//		XMStoreFloat4x4(&cubeRItem->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-//		cubeRItem->objectCBIndex = 0;
-//		cubeRItem->material = mMaterials["example"].get();
-//		cubeRItem->geometry = mGeometries["boxGeo"].get();
-//		cubeRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-//		cubeRItem->IndexCount = cubeRItem->geometry->DrawArgs["box"].IndexCount;
-//		cubeRItem->StartIndexLocation = cubeRItem->geometry->DrawArgs["box"].StartIndexLocation;
-//		cubeRItem->BaseVertexLocation = cubeRItem->geometry->DrawArgs["box"].BaseVertexLocation;
-//		mRitemLayer[(int)RenderLayer::World].push_back(cubeRItem.get());
-//		mAllRitems.push_back(std::move(cubeRItem));
-//
+
+// How to add render Items
+//Go to: Application::BuildRenderItems()
+// 
+//    //Build render items here
+//    UINT objectCBIndex = 0;
+//    
+//    // floor
+//    auto floor = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Grey");
+//    // floor transformations
+//    XMStoreFloat4x4(&floor->position, XMMatrixScaling(25.0f, 1.0f, 25.0f)* XMMatrixTranslation(0.0f, -1.0f, 0.0f));
+//    XMStoreFloat4x4(&floor->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+//    
+//    // boss
+//    auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+//    // boss transformations
+//    XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ)* XMMatrixTranslation(posX, posY, posZ));
+//    XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+//    
+//    // render items to layer
+//    mRitemLayer[(int)RenderLayer::World].emplace_back(floor.get());
+//    mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
+//    
+//    // render items to all render items
+//    mAllRitems.push_back(std::move(floor));
+//    mAllRitems.push_back(std::move(boss));
+// 
 // NOTES
 //ObjectCBIndex needs to be incremented per render item
 //Materials, Geometry and Draw Args need to be exactly the same as where declared

@@ -6,6 +6,7 @@
 #include "FrameResource.h"
 #include "Weapon.h"
 #include "Boss.h"
+#include "OBJ_Loader.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -95,9 +96,13 @@ private:
     void BuildGeometry();
     void BuildPSOs();
     void BuildFrameResources();
+		void BuildMaterial(int& index, int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
     void BuildMaterials();
+		// auto increment obj cb index
+		std::unique_ptr<RenderItem> BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     void BuildRenderItems();
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
+		void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
     std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
@@ -196,6 +201,7 @@ bool Application::Initialize()
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildGeometry();
+
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -714,31 +720,56 @@ void Application::BuildFrameResources()
 	}
 }
 
+void Application::BuildMaterial(int& matCBIndex, int texSrvHeapIndex, const std::string& name, float roughness, const DirectX::XMFLOAT4& diffuseAlbedo, const DirectX::XMFLOAT3& fresnel)
+{
+	auto material = std::make_unique<Material>();
+	material->Name = name;
+	material->MatCBIndex = matCBIndex;
+	material->DiffuseSrvHeapIndex = texSrvHeapIndex;
+	material->DiffuseAlbedo = diffuseAlbedo;
+	material->FresnelR0 = fresnel;
+	material->Roughness = roughness;
+
+	mMaterials[material->Name] = std::move(material);
+
+	++matCBIndex; //increments for next material
+}
+
 /// <summary>
 /// Constructs materials from textures, to use on geometry
 /// </summary>
 void Application::BuildMaterials()
 {
-	auto Grey01 = std::make_unique<Material>();
-	Grey01->Name = "Grey";
-	Grey01->MatCBIndex = 0;
-	Grey01->DiffuseSrvHeapIndex = 0;
-	Grey01->DiffuseAlbedo = XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f);
-	Grey01->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
-	Grey01->Roughness = 0.0f;
+	int matIndex = 0;
 
-	auto Red01 = std::make_unique<Material>();
-	Red01->Name = "Red";
-	Red01->MatCBIndex = 1;
-	Red01->DiffuseSrvHeapIndex = 0;
-	Red01->DiffuseAlbedo = XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f);
-	Red01->FresnelR0 = XMFLOAT3(0.06f, 0.06f, 0.06f);
-	Red01->Roughness = 0.0f;
+	BuildMaterial(matIndex, 0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
+	BuildMaterial(matIndex, 0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
 
+	// todo: uncomment if the Material names are same as texture names
+	/*std::for_each(mTextures.begin(), mTextures.end(), [&](auto& p)
+		{
+			BuildMaterial(matIndex, matIndex, p.first);
+		});*/
 
-	mMaterials["Grey"] = std::move(Grey01);
-	mMaterials["Red"] = std::move(Red01);
+}
 
+std::unique_ptr<RenderItem> Application::BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
+{
+	auto rItem = std::make_unique<RenderItem>();
+	rItem->position = MathHelper::Identity4x4();
+	rItem->objectCBIndex = objCBindex;
+	// todo: uncomment if implementing instancing
+	//rItem->InstanceCount = 0;
+	rItem->geometry = mGeometries[geoName].get();
+	rItem->PrimitiveType = primitiveTopology;
+	rItem->IndexCount = rItem->geometry->DrawArgs[subGeoName].IndexCount;
+	rItem->StartIndexLocation = rItem->geometry->DrawArgs[subGeoName].StartIndexLocation;
+	rItem->BaseVertexLocation = rItem->geometry->DrawArgs[subGeoName].BaseVertexLocation;
+	rItem->material = mMaterials[matName].get();
+	// increment for next render item
+	++objCBindex;
+
+	return std::move(rItem);
 }
 
 /// <summary>
@@ -746,44 +777,36 @@ void Application::BuildMaterials()
 /// </summary>
 void Application::BuildRenderItems()
 {
+
+	float posX = 0.0f;	float scaleX = 1.0f;
+	float posY = 1.0f;	float scaleY = 5.0f;
+	float posZ = 0.0f;	float scaleZ = 1.0f;
+
 	//Build render items here
 	UINT objectCBIndex = 0;
-	//This is the floor
-	auto floorRItem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&floorRItem->position, XMMatrixScaling(25.0f, 1.0f, 25.0f) * XMMatrixTranslation(0.0f, -1.0f, 0.0f));
-	XMStoreFloat4x4(&floorRItem->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	floorRItem->objectCBIndex = objectCBIndex;
-	objectCBIndex++;
-	floorRItem->material = mMaterials["Grey"].get();
-	floorRItem->geometry = mGeometries["boxGeo"].get();
-	floorRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	floorRItem->IndexCount = floorRItem->geometry->DrawArgs["box"].IndexCount;
-	floorRItem->StartIndexLocation = floorRItem->geometry->DrawArgs["box"].StartIndexLocation;
-	floorRItem->BaseVertexLocation = floorRItem->geometry->DrawArgs["box"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::World].push_back(floorRItem.get());
-	mAllRitems.push_back(std::move(floorRItem));
-	
-	float posX = 0.0f;
-	float scaleX = 1.0f;
-	float posY = 1.0f;
-	float scaleY = 5.0f;
-	float posZ = 0.0f;
-	float scaleZ = 1.0f;
-	auto bossRItem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&bossRItem->position, XMMatrixScaling(scaleX, scaleY, scaleZ) * XMMatrixTranslation(posX, posY, posZ));
-	XMStoreFloat4x4(&bossRItem->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	bossRItem->objectCBIndex = objectCBIndex;
-	objectCBIndex++;
-	bossRItem->material = mMaterials["Red"].get();
-	bossRItem->geometry = mGeometries["boxGeo"].get();
-	bossRItem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bossRItem->IndexCount = bossRItem->geometry->DrawArgs["box"].IndexCount;
-	bossRItem->StartIndexLocation = bossRItem->geometry->DrawArgs["box"].StartIndexLocation;
-	bossRItem->BaseVertexLocation = bossRItem->geometry->DrawArgs["box"].BaseVertexLocation;
-	mRitemLayer[(int)RenderLayer::Enemy].push_back(bossRItem.get());
-	mAllRitems.push_back(std::move(bossRItem));
-	bossBox = BoundingBox(XMFLOAT3(posX,posY,posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
 
+	// floor
+	auto floor = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Grey");
+	// floor transformations
+	XMStoreFloat4x4(&floor->position, XMMatrixScaling(25.0f, 1.0f, 25.0f) * XMMatrixTranslation(0.0f, -1.0f, 0.0f));
+	XMStoreFloat4x4(&floor->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+
+	// boss
+	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	// boss transformations
+	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ) * XMMatrixTranslation(posX, posY, posZ));
+	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+	
+	
+	// render items to layer
+	mRitemLayer[(int)RenderLayer::World].emplace_back(floor.get());
+	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
+
+	// render items to all render items
+	mAllRitems.push_back(std::move(floor));
+	mAllRitems.push_back(std::move(boss));
+	
+	bossBox = BoundingBox(XMFLOAT3(posX,posY,posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
 
 }
 
@@ -813,6 +836,93 @@ void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 		cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
+	}
+}
+
+// loads obj objects into mGeometries
+// eg: BuildObjGeometry("Data/Models/object.obj", "objectGeo", "object");// loads obj
+void Application::BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName)
+{
+	struct VertexConversion
+	{
+		Vertex operator()(const objl::Vertex& v)
+		{
+			return
+			{
+				{v.Position.X,v.Position.Y,v.Position.Z},
+				{v.Normal.X,v.Normal.Y,v.Normal.Z},
+				{v.TextureCoordinate.X,-v.TextureCoordinate.Y} // flipped Y coor from blender
+			};
+		}
+	};
+
+	struct IndexConversion
+	{
+		int operator()(const unsigned int& i)
+		{
+			return static_cast<int>(i);
+		}
+	};
+
+	struct MeshConvertion
+	{
+		std::vector<Vertex> vertices;
+		std::vector<std::int32_t> indices;
+
+		void operator()(const objl::Mesh& mesh)
+		{
+			std::transform(mesh.Vertices.begin(), mesh.Vertices.end(), std::back_inserter(vertices), VertexConversion());
+			std::transform(mesh.Indices.begin(), mesh.Indices.end(), std::back_inserter(indices), IndexConversion());
+		}
+	};
+
+	objl::Loader loader;
+
+	bool loadout = loader.LoadFile(filepath);
+
+	if (loadout)
+	{
+		MeshConvertion meshConvert;
+
+		// converts vertex and index formats from objl to local
+		std::for_each(loader.LoadedMeshes.begin(), loader.LoadedMeshes.end(), std::ref(meshConvert));
+
+		const UINT vbByteSize = (UINT)meshConvert.vertices.size() * sizeof(Vertex);
+		const UINT ibByteSize = (UINT)meshConvert.indices.size() * sizeof(std::int32_t);
+
+		auto geo = std::make_unique<MeshGeometry>();
+		geo->Name = meshName;
+
+		ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+		CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), meshConvert.vertices.data(), vbByteSize);
+
+		ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+		CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), meshConvert.indices.data(), ibByteSize);
+
+		geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+			mCommandList.Get(), meshConvert.vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+		geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+			mCommandList.Get(), meshConvert.indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+		geo->VertexByteStride = sizeof(Vertex);
+		geo->VertexBufferByteSize = vbByteSize;
+		geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+		geo->IndexBufferByteSize = ibByteSize;
+
+		SubmeshGeometry submesh;
+		submesh.IndexCount = (UINT)meshConvert.indices.size();
+		submesh.StartIndexLocation = 0;
+		submesh.BaseVertexLocation = 0;
+
+		geo->DrawArgs[subMeshName] = submesh;
+
+		mGeometries[geo->Name] = std::move(geo);
+	}
+	else
+	{
+		//file not found
+		assert(false);
 	}
 }
 

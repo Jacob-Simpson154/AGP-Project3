@@ -64,6 +64,9 @@ artifacts/
 # StyleCop
 StyleCopReport.xml
 
+
+
+
 # Files built by Visual Studio
 *_i.c
 *_p.c
@@ -71,6 +74,8 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+#keeps 3d model .obj
+!Project3/Data/*/*.obj 
 *.iobj
 *.pch
 *.pdb
