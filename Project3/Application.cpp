@@ -1,8 +1,8 @@
-#include "../../Common/d3dApp.h"
-#include "../../Common/MathHelper.h"
-#include "../../Common/UploadBuffer.h"
-#include "../../Common/GeometryGenerator.h"
-#include "../../Common/Camera.h"
+#include "Common/d3dApp.h"
+#include "Common/MathHelper.h"
+#include "Common/UploadBuffer.h"
+#include "Common/GeometryGenerator.h"
+#include "Common/Camera.h"
 #include "FrameResource.h"
 #include "Weapon.h"
 #include "Boss.h"
@@ -493,7 +493,7 @@ void Application::LoadTextures()
 
 	auto defaultDiffuseTex = std::make_unique<Texture>();
 	defaultDiffuseTex->Name = "defaultDiffuseTex";
-	defaultDiffuseTex->Filename = L"../../Textures/white1x1.dds";
+	defaultDiffuseTex->Filename = L"Data/Textures/white1x1.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), defaultDiffuseTex->Filename.c_str(),
 		defaultDiffuseTex->Resource, defaultDiffuseTex->UploadHeap));
