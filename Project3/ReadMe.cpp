@@ -1,32 +1,16 @@
-//How to create material
-//Go to Application::BuildMaterial
-//Use this code as example:
-// 
-//		auto example = std::make_unique<Material>();
-//		example->Name = "example";
-//		example->MatCBIndex = 0;
-//		example->DiffuseSrvHeapIndex = 0;
-//		example->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-//		example->FresnelR0 = XMFLOAT3(0.04f, 0.04f, 0.04f);
-//		example->Roughness = 0.0f;
-//		mMaterials["example"] = std::move(example);
-//
-//Increment MatCBIndex per material
-
 //How to load geometry from file
+// Go to Application::Initialize()
+//  Below BuildShadersAndInputLayout();
+// 
+//  BuildObjGeometry("Data/Models/weapon.obj", "weaponGeo", "tempSword");
+//  BuildObjGeometry("Data/Models/floor.obj","floorGeo", "floor" );
 //
-//
-//
-//
-//
-//
-//
-//
+// Note: mesh names should be postfixed with "Geo" ^
 
 
 // How to build Materials
 //Go to: Application::BuildMaterials()
-// //
+//
 //		int matIndex = 0;
 //
 //		BuildMaterial(matIndex, 0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
@@ -38,7 +22,41 @@
 //				BuildMaterial(matIndex, matIndex, p.first);
 //			});*/
 
-//How to create geometry
+
+// How to add render Items
+//Go to: Application::BuildRenderItems()
+// 
+//    //Build render items here
+//    UINT objectCBIndex = 0;
+//    
+//    // floor
+//    auto floor = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Grey");
+//    // floor transformations
+//    XMStoreFloat4x4(&floor->position, XMMatrixScaling(25.0f, 1.0f, 25.0f)* XMMatrixTranslation(0.0f, -1.0f, 0.0f));
+//    XMStoreFloat4x4(&floor->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+//    
+//    // boss
+//    auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+//    // boss transformations
+//    XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ)* XMMatrixTranslation(posX, posY, posZ));
+//    XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+//    
+//    // render items to layer
+//    mRitemLayer[(int)RenderLayer::World].emplace_back(floor.get());
+//    mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
+//    
+//    // render items to all render items
+//    mAllRitems.push_back(std::move(floor));
+//    mAllRitems.push_back(std::move(boss));
+// 
+// NOTES
+//ObjectCBIndex needs to be incremented per render item
+//Materials, Geometry and Draw Args need to be exactly the same as where declared
+//Currently have two render layers (world and enemy), these use basic opaque PSO
+//Create layer as appropriate
+
+
+//How to create geometry manually
 //Go to Application::BuildGeometry
 //If primitive use this code, adjust CreateBox where other type like Cylinder etc.:
 //
@@ -91,34 +109,3 @@
 //
 
 
-// How to add render Items
-//Go to: Application::BuildRenderItems()
-// 
-//    //Build render items here
-//    UINT objectCBIndex = 0;
-//    
-//    // floor
-//    auto floor = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Grey");
-//    // floor transformations
-//    XMStoreFloat4x4(&floor->position, XMMatrixScaling(25.0f, 1.0f, 25.0f)* XMMatrixTranslation(0.0f, -1.0f, 0.0f));
-//    XMStoreFloat4x4(&floor->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-//    
-//    // boss
-//    auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-//    // boss transformations
-//    XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ)* XMMatrixTranslation(posX, posY, posZ));
-//    XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-//    
-//    // render items to layer
-//    mRitemLayer[(int)RenderLayer::World].emplace_back(floor.get());
-//    mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
-//    
-//    // render items to all render items
-//    mAllRitems.push_back(std::move(floor));
-//    mAllRitems.push_back(std::move(boss));
-// 
-// NOTES
-//ObjectCBIndex needs to be incremented per render item
-//Materials, Geometry and Draw Args need to be exactly the same as where declared
-//Currently have two render layers (world and enemy), these use basic opaque PSO
-//Create layer as appropriate
