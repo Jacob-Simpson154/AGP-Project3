@@ -132,6 +132,8 @@ private:
 
     POINT mLastMousePos;
 
+	bool fpsReady = false;
+
 	int matIndex = 0;
 	//all existing items
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
@@ -330,16 +332,21 @@ void Application::Draw(const GameTimer& gt)
 /// </summary>
 void Application::OnMouseDown(WPARAM btnState, int x, int y)
 {
+	//This has been changed to make the left mouse button shoot, and the ability to have free first person view will be determined by a variable that will be turned on by right clicking and
+	// paused using the "P" key
+
 	if ((btnState & MK_LBUTTON) != 0)
+	{
+		Shoot();
+	}
+	else if ((btnState & MK_RBUTTON) != 0)
 	{
 		mLastMousePos.x = x;
 		mLastMousePos.y = y;
 
 		SetCapture(mhMainWnd);
-	}
-	else if ((btnState & MK_RBUTTON) != 0)
-	{
-		Shoot();
+
+		fpsReady = true;
 	}
 }
 
@@ -356,7 +363,7 @@ void Application::OnMouseUp(WPARAM btnState, int x, int y)
 /// </summary>
 void Application::OnMouseMove(WPARAM btnState, int x, int y)
 {
-	if ((btnState & MK_LBUTTON) != 0)
+	if ((fpsReady) != 0)
 	{
 		// Make each pixel correspond to a quarter of a degree.
 		float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
@@ -392,6 +399,8 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 	if (GetAsyncKeyState('R') & 0x8000)
 		currentGun.Reload();
 
+	if (GetAsyncKeyState('P') & 0x8000)
+		fpsReady = false;
 
 	mCamera.UpdateViewMatrix();
 }
