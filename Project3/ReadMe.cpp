@@ -7,9 +7,14 @@
 //
 // Note: mesh names should be postfixed with "Geo" ^
 
+// How to load textures
+//
+// Goto: Application::LoadTextures()
+//   LoadTexture(L"Data/Textures/white1x1.dds", L"defaultDiffuseTex");
+//
 
 // How to build Materials
-//Go to: Application::BuildMaterials()
+// Go to: Application::BuildMaterials()
 //
 //		int matIndex = 0;
 //

@@ -88,7 +88,7 @@ private:
     void UpdateObjectCBs(const GameTimer& gt);
     void UpdateMaterialBuffer(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
-
+		void LoadTexture(const std::wstring& filename, const std::wstring& name);
     void LoadTextures();
     void BuildRootSignature();
     void BuildDescriptorHeaps();
@@ -490,6 +490,18 @@ void Application::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
+void Application::LoadTexture(const std::wstring& filename, const std::wstring& name)
+{
+	auto tex = std::make_unique<Texture>();
+	tex->Name = "defaultDiffuseTex";
+	tex->Filename = L"Data/Textures/white1x1.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), tex->Filename.c_str(),
+		tex->Resource, tex->UploadHeap));
+
+	mTextures[tex->Name] = std::move(tex);
+}
+
 /// <summary>
 /// Loads texture files from directory
 /// </summary>
@@ -497,14 +509,7 @@ void Application::LoadTextures()
 {
 	//Use this texture as example
 
-	auto defaultDiffuseTex = std::make_unique<Texture>();
-	defaultDiffuseTex->Name = "defaultDiffuseTex";
-	defaultDiffuseTex->Filename = L"Data/Textures/white1x1.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), defaultDiffuseTex->Filename.c_str(),
-		defaultDiffuseTex->Resource, defaultDiffuseTex->UploadHeap));
-
-	mTextures[defaultDiffuseTex->Name] = std::move(defaultDiffuseTex);
+	LoadTexture(L"Data/Textures/white1x1.dds", L"defaultDiffuseTex");
 
 }
 
