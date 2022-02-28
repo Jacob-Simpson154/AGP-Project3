@@ -505,6 +505,7 @@ void Application::LoadTextures()
 		defaultDiffuseTex->Resource, defaultDiffuseTex->UploadHeap));
 
 	mTextures[defaultDiffuseTex->Name] = std::move(defaultDiffuseTex);
+
 }
 
 void Application::BuildRootSignature()
