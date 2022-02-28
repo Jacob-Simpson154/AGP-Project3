@@ -96,7 +96,7 @@ private:
     void BuildGeometry();
     void BuildPSOs();
     void BuildFrameResources();
-		void BuildMaterial(int& index, int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
+		void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
     void BuildMaterials();
 		// auto increment obj cb index
 		std::unique_ptr<RenderItem> BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -132,6 +132,7 @@ private:
 
     POINT mLastMousePos;
 
+	int matIndex = 0;
 	//all existing items
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
@@ -194,7 +195,7 @@ bool Application::Initialize()
 		XMFLOAT3(0.0f, 1.0f, 0.0f));
 
 	bossStats.Setup(0, 100);
-	currentGun.Setup("Pistol", 25);
+	currentGun.Setup("Pistol", 25, 7);
 
 	LoadTextures();
 	BuildRootSignature();
@@ -387,6 +388,9 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 
 	if (GetAsyncKeyState('D') & 0x8000)
 		mCamera.Strafe(10.0f * dt);
+
+	if (GetAsyncKeyState('R') & 0x8000)
+		currentGun.Reload();
 
 
 	mCamera.UpdateViewMatrix();
@@ -726,11 +730,11 @@ void Application::BuildFrameResources()
 	}
 }
 
-void Application::BuildMaterial(int& matCBIndex, int texSrvHeapIndex, const std::string& name, float roughness, const DirectX::XMFLOAT4& diffuseAlbedo, const DirectX::XMFLOAT3& fresnel)
+void Application::BuildMaterial(int texSrvHeapIndex, const std::string& name, float roughness, const DirectX::XMFLOAT4& diffuseAlbedo, const DirectX::XMFLOAT3& fresnel)
 {
 	auto material = std::make_unique<Material>();
 	material->Name = name;
-	material->MatCBIndex = matCBIndex;
+	material->MatCBIndex = matIndex;
 	material->DiffuseSrvHeapIndex = texSrvHeapIndex;
 	material->DiffuseAlbedo = diffuseAlbedo;
 	material->FresnelR0 = fresnel;
@@ -738,7 +742,7 @@ void Application::BuildMaterial(int& matCBIndex, int texSrvHeapIndex, const std:
 
 	mMaterials[material->Name] = std::move(material);
 
-	++matCBIndex; //increments for next material
+	++matIndex; //increments for next material
 }
 
 /// <summary>
@@ -746,10 +750,9 @@ void Application::BuildMaterial(int& matCBIndex, int texSrvHeapIndex, const std:
 /// </summary>
 void Application::BuildMaterials()
 {
-	int matIndex = 0;
 
-	BuildMaterial(matIndex, 0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
-	BuildMaterial(matIndex, 0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
+	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
 
 	// todo: uncomment if the Material names are same as texture names
 	/*std::for_each(mTextures.begin(), mTextures.end(), [&](auto& p)
@@ -934,42 +937,47 @@ void Application::BuildObjGeometry(const std::string& filepath, const std::strin
 
 void Application::Shoot()
 {
-	XMFLOAT4X4 P = mCamera.GetProj4x4f();
-	float vx = (+2.0f * (mClientWidth / 2) / mClientWidth - 1.0f) / P(0, 0);
-	float vy = (-2.0f * (mClientHeight / 2) / mClientHeight + 1.0f) / P(1, 1);
-
-	XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-	XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);
-	XMMATRIX V = mCamera.GetView();
-	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(V), V);
-
-	for (auto ri : mRitemLayer[(int)RenderLayer::Enemy])
+	if (currentGun.CanShoot())
 	{
-		auto geo = ri->geometry;
-		if (ri->shouldRender == false)
-			continue;
+		currentGun.Shoot();
 
-		XMMATRIX W = XMLoadFloat4x4(&ri->position);
-		XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
+		XMFLOAT4X4 P = mCamera.GetProj4x4f();
+		float vx = (+2.0f * (mClientWidth / 2) / mClientWidth - 1.0f) / P(0, 0);
+		float vy = (-2.0f * (mClientHeight / 2) / mClientHeight + 1.0f) / P(1, 1);
 
-		// Tranform ray to vi space of Mesh.
-		XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
+		XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
+		XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);
+		XMMATRIX V = mCamera.GetView();
+		XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(V), V);
 
-		rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
-		rayDir = XMVector3TransformNormal(rayDir, toLocal);
-
-		// Make the ray direction unit length for the intersection tests.
-		rayDir = XMVector3Normalize(rayDir);
-
-		//Ray/AABB test to see if ray is close to mesh
-		float tmin = 0.0f;
-		if (bossBox.Intersects(rayOrigin, rayDir, tmin))
+		for (auto ri : mRitemLayer[(int)RenderLayer::Enemy])
 		{
-			bool isDead = bossStats.DealDamage(currentGun.GetDamage());
-			if (isDead == true)
+			auto geo = ri->geometry;
+			if (ri->shouldRender == false)
+				continue;
+
+			XMMATRIX W = XMLoadFloat4x4(&ri->position);
+			XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
+
+			// Tranform ray to vi space of Mesh.
+			XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
+
+			rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
+			rayDir = XMVector3TransformNormal(rayDir, toLocal);
+
+			// Make the ray direction unit length for the intersection tests.
+			rayDir = XMVector3Normalize(rayDir);
+
+			//Ray/AABB test to see if ray is close to mesh
+			float tmin = 0.0f;
+			if (bossBox.Intersects(rayOrigin, rayDir, tmin))
 			{
-				ri->material = mMaterials["Grey"].get();
-				ri->NumFramesDirty = gNumFrameResources;
+				bool isDead = bossStats.DealDamage(currentGun.GetDamage());
+				if (isDead == true)
+				{
+					ri->material = mMaterials["Grey"].get();
+					ri->NumFramesDirty = gNumFrameResources;
+				}
 			}
 		}
 	}
