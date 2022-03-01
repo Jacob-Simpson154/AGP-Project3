@@ -52,8 +52,17 @@ public:
 };
 
 
-
-
+class SfxChannel : public BaseAudioChannel
+{
+	// Forces new instance to play when cache is full by removing oldest instance.  
+	bool mForceAudio;
+public:
+	SfxChannel(DirectX::AudioListener* listener);
+	void Init() override;
+	void Update(float gt) override;
+	void Play(const std::string& soundName, DirectX::AudioEmitter* emitter = nullptr, bool loop = false, float volume = 1.0f, float pitch = 0.0f, float pan = 0.0f) override; // push back mCache
+	void ForceAudio(bool force) override;
+};
 
 
 
