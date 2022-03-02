@@ -1,4 +1,6 @@
 #include "AudioSystem.h"
+#include <algorithm>
+#include <iterator>
 
 //
 // Base Audio
@@ -184,5 +186,111 @@ void SfxChannel::Play(const std::string& soundName, DirectX::AudioEmitter* emitt
 void SfxChannel::ForceAudio(bool force)
 {
 	mForceAudio = force;
+}
+
+
+MusicChannel::MusicChannel(DirectX::AudioListener* listener)
+	:
+	BaseAudioChannel(listener)
+{
+	mType = AUDIO_ENGINE_TYPE::MUSIC;
+	mCacheLimit = 2; // Only front and back
+}
+
+void MusicChannel::Init()
+{
+	DirectX::AUDIO_ENGINE_FLAGS eflags = DirectX::AudioEngine_Default;
+
+#ifdef _DEBUG
+	eflags = eflags | DirectX::AudioEngine_Debug;
+#endif
+	//Setup engine for music and ambience
+	mAudioEngine = std::make_unique<DirectX::AudioEngine>(eflags, nullptr, nullptr, AudioCategory_GameMedia);
+
+	assert(mCache.size() == 0);
+
+	std::generate_n(std::back_inserter(mCache), mCacheLimit, []()
+		{
+
+			return std::unique_ptr<DirectX::SoundEffectInstance>{};
+		});
+
+}
+
+void MusicChannel::Update(float gt)
+{
+
+
+	if (mAudioEngine->Update())
+	{
+		assert(mCache.size() == mCacheLimit);
+
+		//Increase volume for cache
+		mNormalisedVolume += gt / mFadeInSecs;
+
+		//Limit normalised volume
+		if (mNormalisedVolume > 1.0f)
+			mNormalisedVolume = 1.0f;
+		else if (mNormalisedVolume < 0.0f)
+			mNormalisedVolume = 0.0f;
+
+		//Apply volume
+		if (mCache.front())
+			mCache.front()->SetVolume(mNormalisedVolume);
+		if (mCache.back())
+			mCache.back()->SetVolume((1.0f - mNormalisedVolume)); //compliment
+
+	}
+	else
+	{
+		if (mAudioEngine->IsCriticalError())
+		{
+			assert(false);
+		}
+	}
+
+
+
+}
+
+void MusicChannel::Play(const std::string& soundName, DirectX::AudioEmitter* emitter, bool loop, float volume, float pitch, float pan)
+{
+	assert(mSounds[soundName]);
+
+	// Doesn't fade into the same track
+	if (soundName != mFrontAudio)
+	{
+		mFrontAudio = soundName;
+
+		SwapCache(); //Current front audio swapped with last
+
+		DirectX::SOUND_EFFECT_INSTANCE_FLAGS iflags = GetInstanceFlags(emitter);
+
+		//New instance to first cache element
+		mCache.front() = std::move(mSounds[soundName]->CreateInstance(iflags));
+
+		mCache.front()->Play(loop);
+
+		//Set properties
+		if (emitter && pListener)
+		{
+			mCache.front()->Apply3D(*pListener, *emitter);
+		}
+		else
+		{
+			mCache.front()->SetVolume(mNormalisedVolume);
+			mCache.front()->SetPitch(pitch);
+			mCache.front()->SetPan(pan);
+		}
+	}
+
+
+
+}
+
+void MusicChannel::SwapCache()
+{
+	mCache.front().swap(mCache.back());
+	mNormalisedVolume = 1.0f - mNormalisedVolume;//swap audio volume 
 }
 

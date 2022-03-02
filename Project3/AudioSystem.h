@@ -65,7 +65,20 @@ public:
 };
 
 
-
+class MusicChannel : public BaseAudioChannel
+{
+private:
+	// To comparing if track is already playing
+	std::string mFrontAudio = "";
+	//Swaps front to back
+	void SwapCache();
+public:
+	MusicChannel(DirectX::AudioListener* listener);
+	void Init() override;
+	void Update(float gt) override;
+	void Play(const std::string& soundName, DirectX::AudioEmitter* emitter = nullptr, bool loop = false, float volume = 1.0f, float pitch = 0.0f, float pan = 0.0f) override;
+	void ForceAudio(bool force) override {};
+};
 
 
 
