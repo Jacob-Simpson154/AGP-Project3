@@ -21,7 +21,7 @@ BaseAudioChannel::BaseAudioChannel(DirectX::AudioListener* listener)
 	:
 	mCacheLimit(1),
 	pListener(listener),
-	mType(AUDIO_ENGINE_TYPE::SFX)
+	mType(AUDIO_CHANNEL_TYPE::SFX)
 {
 
 }
@@ -54,12 +54,12 @@ void BaseAudioChannel::LoadSound(const std::string& soundName, const std::wstrin
 	mSounds[soundName] = std::move(sound);
 }
 
-AUDIO_ENGINE_TYPE BaseAudioChannel::GetType()
+AUDIO_CHANNEL_TYPE BaseAudioChannel::GetType()
 {
 	return mType;
 }
 
-void BaseAudioChannel::SetEngineVolume(float volume, bool increment)
+void BaseAudioChannel::SetChannelVolume(float volume, bool increment)
 {
 	if (increment)
 	{
@@ -82,7 +82,7 @@ void BaseAudioChannel::SetEngineVolume(float volume, bool increment)
 	mAudioEngine->SetMasterVolume(volume);
 }
 
-const float BaseAudioChannel::GetEngineVolume()
+const float BaseAudioChannel::GetChannelVolume()
 {
 	return mAudioEngine->GetMasterVolume();
 }
@@ -96,7 +96,7 @@ SfxChannel::SfxChannel(DirectX::AudioListener* listener)
 	BaseAudioChannel(listener),
 	mForceAudio(true)
 {
-	mType = AUDIO_ENGINE_TYPE::SFX;
+	mType = AUDIO_CHANNEL_TYPE::SFX;
 	mCacheLimit = 1;
 }
 
@@ -188,12 +188,15 @@ void SfxChannel::ForceAudio(bool force)
 	mForceAudio = force;
 }
 
+//
+// Music 
+//
 
 MusicChannel::MusicChannel(DirectX::AudioListener* listener)
 	:
 	BaseAudioChannel(listener)
 {
-	mType = AUDIO_ENGINE_TYPE::MUSIC;
+	mType = AUDIO_CHANNEL_TYPE::MUSIC;
 	mCacheLimit = 2; // Only front and back
 }
 
@@ -292,5 +295,229 @@ void MusicChannel::SwapCache()
 {
 	mCache.front().swap(mCache.back());
 	mNormalisedVolume = 1.0f - mNormalisedVolume;//swap audio volume 
+}
+
+
+//
+// Game Audio 
+//
+
+bool AudioSystem::ValidChannel(const std::string& name)
+{
+	if (mChannels.count(name) == 1)
+	{
+		return true;
+	}
+	else
+	{
+		std::string str = "Error - SoundEngine '" + name + "' does not exist.\n";
+		OutputDebugStringA(str.c_str());
+		return false;
+	}
+}
+
+bool AudioSystem::ValidKeys(const std::string& channelName, const std::string& soundName)
+{
+	bool b = false;
+
+	if (mkeys.count(soundName) == 1)
+	{
+		if (mkeys[soundName] == channelName)
+		{
+			b = true;
+		}
+		else
+		{
+			std::string str = "Error - Sound '" + soundName + "' is not contained within '" + channelName + "'. Contained in '" + mkeys[soundName] + "'.\n";
+			OutputDebugStringA(str.c_str());
+		}
+	}
+	else
+	{
+		std::string str = "Error - Sound '" + soundName + "' does not exist.\n ";
+		OutputDebugStringA(str.c_str());
+	}
+	assert(b);
+	return b;
+}
+
+AudioSystem::~AudioSystem()
+{
+	OutputDebugStringA("~AudioSystem   \n");
+	mChannels.clear();
+}
+
+void AudioSystem::Init()
+{
+	HRESULT hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+	if (FAILED(hr))
+	{
+		assert(false);
+	}
+	mCone = X3DAudioDefault_DirectionalCone;
+
+}
+
+void AudioSystem::CreateChannel(const std::string& name, const AUDIO_CHANNEL_TYPE& type)
+{
+	assert(name.length() > 0);
+
+	if (!mChannels[name])
+	{
+		switch (type)
+		{
+		case SFX:	mChannels[name] = std::make_unique<SfxChannel>(&mListener); break;
+		case MUSIC:	mChannels[name] = std::make_unique<MusicChannel>(&mListener); break;
+		default:			assert(false);
+		}
+
+		mChannels[name]->Init();
+	}
+	else
+	{
+		assert(false);
+	}
+}
+
+void AudioSystem::Update(float gt, const DirectX::XMFLOAT3& camPos, const DirectX::XMFLOAT3& camForward, const DirectX::XMFLOAT3& camUp)
+{
+	//Camera as listener
+	mListener.SetPosition(camPos);
+	mListener.SetOrientation(camForward, camUp);
+
+	for (auto& engine : mChannels)
+	{
+		engine.second->Update(gt);
+	}
+}
+
+void AudioSystem::Play(const std::string& soundName, DirectX::AudioEmitter* emitter, bool loop, float volume, float pitch, float pan)
+{
+	if (mkeys.count(soundName) == 1)
+	{
+		mChannels[mkeys[soundName]]->Play(soundName, emitter, loop, volume, pitch, pan);
+	}
+	else
+	{
+		std::string msg = "Error - Audio cannot play: " + soundName + "\n";
+		OutputDebugStringA(msg.c_str());
+		assert(false);
+	}
+
+
+}
+
+void AudioSystem::Pause(const std::string& channelName)
+{
+	if (ValidChannel(channelName))
+		mChannels[channelName]->Pause();
+}
+
+void AudioSystem::Resume(const std::string& channelName)
+{
+	if (ValidChannel(channelName))
+		mChannels[channelName]->Resume();
+}
+
+void AudioSystem::PauseAll()
+{
+	std::for_each(mChannels.begin(), mChannels.end(), [](auto& e)
+		{
+			e.second->Pause();
+		});
+}
+
+void AudioSystem::ResumeAll()
+{
+	std::for_each(mChannels.begin(), mChannels.end(), [](auto& e)
+		{
+			e.second->Resume();
+		});
+}
+
+void AudioSystem::LoadSound(const std::string& channelName, const std::string& soundName, const std::wstring& filename)
+{
+	std::string debug = "";
+
+
+	//Check sound doesnt already exist
+	if (mkeys.count(soundName) == 0)
+	{
+		//Create an SFX engine if one doesn't exist
+		if (!ValidChannel(channelName))
+		{
+			CreateChannel(channelName, SFX);
+			OutputDebugStringA("Warning - Engine not created. Default SFX_Engine created");
+		}
+
+		//Adds keys to map
+		mkeys[soundName] = channelName;
+
+		//Add audio to engine
+		mChannels[channelName]->LoadSound(soundName, filename);
+
+		std::string debug = "Success - Audio loaded: " + soundName + "on engine " + channelName + "\n";
+	}
+	else
+	{
+		std::string debug = "Warning - Audio already loaded: " + soundName + "on engine " + channelName + "\n";
+	}
+
+	OutputDebugStringA(debug.c_str());
+}
+
+void AudioSystem::SetCacheSize(const std::string& name, size_t limit)
+{
+	assert(ValidChannel(name));
+
+	switch (mChannels[name]->GetType())
+	{
+	case AUDIO_CHANNEL_TYPE::SFX:	mChannels[name]->SetCacheLimit(limit); break;
+	case AUDIO_CHANNEL_TYPE::MUSIC:	OutputDebugStringA("Warning - Cannot change cache size of music audio engines.\n"); break;
+
+	}
+}
+
+void AudioSystem::ForceAudio(const std::string& name, bool force)
+{
+	if (ValidChannel(name))
+	{
+		switch (mChannels[name]->GetType())
+		{
+		case AUDIO_CHANNEL_TYPE::SFX:	mChannels[name]->ForceAudio(force); break;
+		case AUDIO_CHANNEL_TYPE::MUSIC:	OutputDebugStringA("Warning - No forcing audio for music audio engines.\n"); break;
+		}
+	}
+
+}
+
+void AudioSystem::SetFade(const std::string& name, float secs)
+{
+	if (ValidChannel(name))
+	{
+
+		switch (mChannels[name]->GetType())
+		{
+		case AUDIO_CHANNEL_TYPE::MUSIC:	mChannels[name]->SetFade(secs); break;
+		case AUDIO_CHANNEL_TYPE::SFX:	OutputDebugStringA("Warning - SFX audio engines do not support fading.\n"); break;
+		}
+
+	}
+}
+
+void AudioSystem::SetChannelVolume(const std::string& channelName, float volume, bool increment)
+{
+	if (ValidChannel(channelName))
+	{
+		mChannels[channelName]->SetChannelVolume(volume, increment);
+	}
+}
+
+void AudioSystem::SetVolume(float volume, bool increment)
+{
+	for (auto& e : mChannels)
+	{
+		e.second->SetChannelVolume(volume, increment);
+	}
 }
 
