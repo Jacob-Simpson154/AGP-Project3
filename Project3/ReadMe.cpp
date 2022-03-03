@@ -60,6 +60,15 @@
 //Currently have two render layers (world and enemy), these use basic opaque PSO
 //Create layer as appropriate
 
+// How to set up an audio channel
+// See: 
+//    Application::BuildAudio() for audio channel setup
+//    class AudioSystem         for member function descriptions
+// 
+// Can setup multiple sfx and music channels 
+//  eg: 
+//    sfx, UI of type SFX
+//    ambient, music of type MUSIC
 
 //How to create geometry manually
 //Go to Application::BuildGeometry

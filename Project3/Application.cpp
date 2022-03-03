@@ -4,6 +4,7 @@
 #include "Common/GeometryGenerator.h"
 #include "Common/Camera.h"
 #include "FrameResource.h"
+#include "AudioSystem.h"
 #include "Weapon.h"
 #include "Boss.h"
 #include "OBJ_Loader.h"
@@ -91,6 +92,7 @@ private:
     void UpdateMainPassCB(const GameTimer& gt);
 	void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
+		void BuildAudio();
     void BuildRootSignature();
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
@@ -128,7 +130,7 @@ private:
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	
-	PassConstants mMainPassCB;
+		PassConstants mMainPassCB;
 
     Camera mCamera;
 
@@ -141,6 +143,7 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 
+	AudioSystem mGameAudio;
 
 	BoundingBox bossBox;
 
@@ -149,6 +152,8 @@ private:
 
 	Boss bossStats;
 	Weapon currentGun;
+
+	float mAudioVolume = 0.3f;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -197,6 +202,8 @@ bool Application::Initialize()
 	// so we have to query this information.
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+	
+
 	mCamera.LookAt(
 		XMFLOAT3(5.0f, 4.0f, -15.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f),
@@ -205,6 +212,7 @@ bool Application::Initialize()
 	bossStats.Setup(0, 100);
 	currentGun.Setup("Pistol", 25, 7);
 
+	BuildAudio();
 	LoadTextures();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
@@ -254,6 +262,8 @@ void Application::Update(const GameTimer& gt)
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
+
+	mGameAudio.Update(mTimer.DeltaTime(), mCamera.GetPosition3f(), mCamera.GetLook3f(), mCamera.GetUp3f());
 
 	AnimateMaterials(gt);
 	UpdateObjectCBs(gt);
@@ -398,7 +408,10 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 		mCamera.Walk(10.0f * dt);
 
 	if (GetAsyncKeyState('S') & 0x8000)
+	{
 		mCamera.Walk(-10.0f * dt);
+		mGameAudio.Play("evilMusic");
+	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
 		mCamera.Strafe(-10.0f * dt);
@@ -554,6 +567,34 @@ void Application::LoadTextures()
 
 
 
+}
+
+void Application::BuildAudio()
+{
+	mGameAudio.Init();
+	// set master volume
+	
+
+	// sfx channel
+	{
+		mGameAudio.CreateChannel("sfx", AUDIO_CHANNEL_TYPE::SFX);
+		mGameAudio.SetCacheSize("sfx", 30u);
+		mGameAudio.ForceAudio("sfx", true);
+		mGameAudio.LoadSound("sfx", "explosion", L"Data/Audio/386862__prof-mudkip__8-bit-explosion.wav");
+		mGameAudio.LoadSound("sfx", "hit", L"Data/Audio/398957__prof-mudkip__hit-hurt.wav");
+		mGameAudio.SetChannelVolume("sfx", mAudioVolume);
+		mGameAudio.Play("hit");
+	}
+	// music channel
+	{
+		mGameAudio.CreateChannel("music", AUDIO_CHANNEL_TYPE::MUSIC);
+		mGameAudio.SetFade("music", 3.0f);
+		mGameAudio.SetChannelVolume("music", mAudioVolume);
+		mGameAudio.LoadSound("music", "heroMusic", L"Data/Audio/615342__josefpres__8-bit-game-music-001-simple-mix-01-short-loop-120-bpm.wav");
+		mGameAudio.LoadSound("music", "evilMusic", L"Data/Audio/545218__victor-natas__evil-music.wav");
+		mGameAudio.Play("heroMusic");
+	}
+	
 }
 
 void Application::BuildRootSignature()
