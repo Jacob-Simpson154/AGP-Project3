@@ -208,7 +208,7 @@ void MusicChannel::Init()
 	eflags = eflags | DirectX::AudioEngine_Debug;
 #endif
 	//Setup engine for music and ambience
-	mAudioEngine = std::make_unique<DirectX::AudioEngine>(eflags, nullptr, nullptr, AudioCategory_GameMedia);
+	mAudioEngine = std::make_unique<DirectX::AudioEngine>(eflags, nullptr, nullptr, AudioCategory_GameMedia); // AudioCategory_GameMedia
 
 	assert(mCache.size() == 0);
 
@@ -263,7 +263,13 @@ void MusicChannel::Play(const std::string& soundName, DirectX::AudioEmitter* emi
 	// Doesn't fade into the same track
 	if (soundName != mFrontAudio)
 	{
-		mFrontAudio = soundName;
+		if (soundName.size() >= MusicChannel::MAX_AUDIONAME)
+		{
+			// music name too long
+			assert(false);
+		}
+		
+		strcpy_s(mFrontAudio, soundName.c_str());
 
 		SwapCache(); //Current front audio swapped with last
 
@@ -491,15 +497,15 @@ void AudioSystem::ForceAudio(const std::string& name, bool force)
 
 }
 
-void AudioSystem::SetFade(const std::string& name, float secs)
+void AudioSystem::SetFade(const std::string& channelName, float secs)
 {
-	if (ValidChannel(name))
+	if (ValidChannel(channelName))
 	{
 
-		switch (mChannels[name]->GetType())
+		switch (mChannels[channelName]->GetType())
 		{
-		case AUDIO_CHANNEL_TYPE::MUSIC:	mChannels[name]->SetFade(secs); break;
-		case AUDIO_CHANNEL_TYPE::SFX:	OutputDebugStringA("Warning - SFX audio engines do not support fading.\n"); break;
+			case AUDIO_CHANNEL_TYPE::MUSIC:	mChannels[channelName]->SetFade(secs); break;
+			case AUDIO_CHANNEL_TYPE::SFX:	OutputDebugStringA("Warning - SFX audio engines do not support fading.\n"); break;
 		}
 
 	}

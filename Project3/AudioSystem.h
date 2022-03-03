@@ -1,12 +1,11 @@
 #pragma once
 
-#include "Audio.h"
 #include <string>
-
 #include <unordered_map>
 #include <map>
 #include <array>
 #include <memory>
+#include "Audio.h"
 /*
 			BaseAudioChannel
 				|    |
@@ -68,8 +67,9 @@ public:
 class MusicChannel : public BaseAudioChannel
 {
 private:
+	enum{MAX_AUDIONAME = 32};
 	// To comparing if track is already playing
-	std::string mFrontAudio = "";
+	char mFrontAudio[MAX_AUDIONAME];	//std::string mFrontAudio = "";
 	//Swaps front to back
 	void SwapCache();
 public:
@@ -88,7 +88,6 @@ class AudioSystem
 private:
 	std::map<std::string, std::unique_ptr<BaseAudioChannel>> mChannels;
 	std::map<std::string, std::string> mkeys; //audioname and channel name
-	float masterVolume;
 	DirectX::AudioListener mListener;
 	X3DAUDIO_CONE mCone; // for 3D sound. Default set in Init()
 	bool ValidChannel(const std::string& name);
@@ -99,6 +98,7 @@ public:
 	void Init();
 	// Creates specialised channels for audio playback
 	void CreateChannel(const std::string& name, const AUDIO_CHANNEL_TYPE& type);
+	// Place in game loop with camera vectors
 	void Update(float gt, const DirectX::XMFLOAT3& camPos, const DirectX::XMFLOAT3& camForward, const DirectX::XMFLOAT3& camUp);
 	// Plays audio. Channel name not required. Supplying AudioEmitter* applies 3D sound. 
 	void Play(const std::string& soundName, DirectX::AudioEmitter* emitter = nullptr, bool loop = false, float volume = 1.0f, float pitch = 0.0f, float pan = 0.0f);
@@ -106,7 +106,9 @@ public:
 	void Pause(const std::string& channelName);
 	// Resume specific channel
 	void Resume(const std::string& channelName);
+	// pauses all channels
 	void PauseAll();
+	// resumes all channels
 	void ResumeAll();
 	void LoadSound(const std::string& channelName, const std::string& soundName, const std::wstring& filename);
 	// How many audio clips can play at once per channel. SFX channel only. Minimum of 1. Music channels have cache size of 2.
@@ -115,6 +117,7 @@ public:
 	void ForceAudio(const std::string& name, bool force);
 	// Fade effect for music audio channels
 	void SetFade(const std::string& name, float secs);
+	// Set volume for a specific channel
 	void SetChannelVolume(const std::string& channelName, float volume, bool increment = false);
 	// Set volume of all channels
 	void SetVolume(float volume, bool increment = false);
