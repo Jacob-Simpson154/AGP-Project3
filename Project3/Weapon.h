@@ -11,10 +11,15 @@ public:
 	void Reload();
 	bool CanShoot();
 	void Shoot();
+	void AddAmmo(float percentage);
 
 private:
 	std::string name = "Pistol";
-	int ammo = 0;
-	int maxAmmo = 0;
 	int damage = 20;
+	int magazineSize = 0;
+
+	int loadedAmmo = 0;
+	int reserveAmmo;
+	int maxAmmo;
+
 };

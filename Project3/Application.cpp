@@ -61,6 +61,7 @@ enum class RenderLayer : int
 {
 	World = 0,
 	Enemy,
+	AmmoBox,
 	Count
 };
 
@@ -88,7 +89,7 @@ private:
     void UpdateObjectCBs(const GameTimer& gt);
     void UpdateMaterialBuffer(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
-		void LoadTexture(const std::wstring& filename, const std::wstring& name);
+	void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
     void BuildRootSignature();
     void BuildDescriptorHeaps();
@@ -104,6 +105,7 @@ private:
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 		void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
+	void CheckCameraCollision();
     std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
 private:
@@ -141,6 +143,10 @@ private:
 
 
 	BoundingBox bossBox;
+
+	BoundingBox ammoBox[4];
+	BoundingBox cameraBox;
+
 	Boss bossStats;
 	Weapon currentGun;
 };
@@ -209,6 +215,9 @@ bool Application::Initialize()
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSOs();
+
+	cameraBox = BoundingBox(mCamera.GetPosition3f(), XMFLOAT3(1, 1, 1));
+
 
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -300,6 +309,7 @@ void Application::Draw(const GameTimer& gt)
 	mCommandList->SetGraphicsRootDescriptorTable(3, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
 	
 
@@ -403,6 +413,8 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 		fpsReady = false;
 
 	mCamera.UpdateViewMatrix();
+	cameraBox.Center = mCamera.GetPosition3f();
+	CheckCameraCollision();
 }
 
 /// <summary>
@@ -503,17 +515,17 @@ void Application::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-void Application::LoadTexture(const std::wstring& filename, const std::wstring& name)
-{
-	auto tex = std::make_unique<Texture>();
-	tex->Name = "defaultDiffuseTex";
-	tex->Filename = L"Data/Textures/white1x1.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), tex->Filename.c_str(),
-		tex->Resource, tex->UploadHeap));
-
-	mTextures[tex->Name] = std::move(tex);
-}
+//void Application::LoadTexture(const std::wstring& filename, const std::string& name)
+//{
+//	auto tex = std::make_unique<Texture>();
+//	tex->Name = name;
+//	tex->Filename = filename;
+//	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+//		mCommandList.Get(), tex->Filename.c_str(),
+//		tex->Resource, tex->UploadHeap));
+//
+//	mTextures[tex->Name] = std::move(tex);
+//}
 
 /// <summary>
 /// Loads texture files from directory
@@ -521,8 +533,26 @@ void Application::LoadTexture(const std::wstring& filename, const std::wstring& 
 void Application::LoadTextures()
 {
 	//Use this texture as example
+	auto defaultDiffuseTex = std::make_unique<Texture>();
+	defaultDiffuseTex->Name = "defaultDiffuseTex";
+	defaultDiffuseTex->Filename = L"Data/Textures/white1x1.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), defaultDiffuseTex->Filename.c_str(),
+		defaultDiffuseTex->Resource, defaultDiffuseTex->UploadHeap));
 
-	LoadTexture(L"Data/Textures/white1x1.dds", L"defaultDiffuseTex");
+	mTextures[defaultDiffuseTex->Name] = std::move(defaultDiffuseTex);
+
+
+	auto tempTex = std::make_unique<Texture>();
+	tempTex->Name = "tempTex";
+	tempTex->Filename = L"Data/Textures/tile.dds";
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), tempTex->Filename.c_str(),
+		tempTex->Resource, tempTex->UploadHeap));
+
+	mTextures[tempTex->Name] = std::move(tempTex);
+
+
 
 }
 
@@ -573,7 +603,7 @@ void Application::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 1;
+	srvHeapDesc.NumDescriptors = 2;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -583,7 +613,10 @@ void Application::BuildDescriptorHeaps()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto defaultDiffuseTex = mTextures["defaultDiffuseTex"]->Resource;
+	auto defaultDiffuseTex		= mTextures["defaultDiffuseTex"]->Resource;
+	auto tempBillboardingTex	= mTextures["tempTex"]->Resource;
+
+
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
@@ -593,6 +626,12 @@ void Application::BuildDescriptorHeaps()
 	srvDesc.Texture2D.MipLevels = defaultDiffuseTex->GetDesc().MipLevels;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	md3dDevice->CreateShaderResourceView(defaultDiffuseTex.Get(), &srvDesc, hDescriptor);
+
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	srvDesc.Format = tempBillboardingTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = tempBillboardingTex->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(tempBillboardingTex.Get(), &srvDesc, hDescriptor);
 }
 
 void Application::BuildShadersAndInputLayout()
@@ -761,6 +800,7 @@ void Application::BuildMaterials()
 {
 
 	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
+	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
 
 	// todo: uncomment if the Material names are same as texture names
@@ -814,7 +854,43 @@ void Application::BuildRenderItems()
 	// boss transformations
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ) * XMMatrixTranslation(posX, posY, posZ));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	
+	bossBox = BoundingBox(XMFLOAT3(posX, posY, posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
+
+
+
+	// Ammo crate
+	{
+		auto ammoCrate_01 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
+		XMStoreFloat4x4(&ammoCrate_01->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(-5, 2, 0));
+		XMStoreFloat4x4(&ammoCrate_01->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		ammoBox[0]= BoundingBox(XMFLOAT3(-5, 2, 0), XMFLOAT3(2, 2, 2));
+		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_01.get());
+		mAllRitems.push_back(std::move(ammoCrate_01));		
+		
+		auto ammoCrate_02 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
+		XMStoreFloat4x4(&ammoCrate_02->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(5, 2, 0));
+		XMStoreFloat4x4(&ammoCrate_02->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		ammoBox[1]= BoundingBox(XMFLOAT3(5, 2, 0), XMFLOAT3(2, 2, 2));
+		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_02.get());
+		mAllRitems.push_back(std::move(ammoCrate_02));		
+		
+		auto ammoCrate_03 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
+		XMStoreFloat4x4(&ammoCrate_03->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(0, 2, -5));
+		XMStoreFloat4x4(&ammoCrate_03->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		ammoBox[2]= BoundingBox(XMFLOAT3(0, 2, -5), XMFLOAT3(2, 2, 2));
+		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_03.get());
+		mAllRitems.push_back(std::move(ammoCrate_03));		
+		
+		auto ammoCrate_04 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
+		XMStoreFloat4x4(&ammoCrate_04->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(0, 2, 5));
+		XMStoreFloat4x4(&ammoCrate_04->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
+		ammoBox[3]= BoundingBox(XMFLOAT3(0, 2, 5), XMFLOAT3(2, 2, 2));
+		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_04.get());
+		mAllRitems.push_back(std::move(ammoCrate_04));		
+	}
+
+
+
 	
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::World].emplace_back(floor.get());
@@ -824,7 +900,6 @@ void Application::BuildRenderItems()
 	mAllRitems.push_back(std::move(floor));
 	mAllRitems.push_back(std::move(boss));
 	
-	bossBox = BoundingBox(XMFLOAT3(posX,posY,posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
 
 }
 
@@ -992,6 +1067,28 @@ void Application::Shoot()
 					ri->NumFramesDirty = gNumFrameResources;
 				}
 			}
+		}
+	}
+
+}
+
+void Application::CheckCameraCollision()
+{
+	int counter = -1;
+
+	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
+	{
+		counter++;
+
+		auto geo = ri->geometry;
+		if (ri->shouldRender == false)
+			continue;
+
+		if(ammoBox[counter].Contains(mCamera.GetPosition()))
+		{
+			ri->shouldRender = false;
+			ri->NumFramesDirty = gNumFrameResources;
+			currentGun.AddAmmo(50);
 		}
 	}
 
