@@ -527,3 +527,7 @@ void AudioSystem::SetVolume(float volume, bool increment)
 	}
 }
 
+float RandomPitchValue()
+{
+	return static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5f;;
+}

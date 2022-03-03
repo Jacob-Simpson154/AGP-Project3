@@ -123,3 +123,6 @@ public:
 	void SetVolume(float volume, bool increment = false);
 
 };
+
+// random pitch +- 0.5
+float RandomPitchValue();
