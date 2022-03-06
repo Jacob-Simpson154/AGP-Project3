@@ -158,6 +158,7 @@
     <ClCompile Include="Common\MathHelper.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="ReadMe.cpp" />
+    <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="Weapon.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -174,6 +175,7 @@
     <ClInclude Include="Common\MathHelper.h" />
     <ClInclude Include="Common\UploadBuffer.h" />
     <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="Terrain.h" />
     <ClInclude Include="Weapon.h" />
   </ItemGroup>
   <ItemGroup>
