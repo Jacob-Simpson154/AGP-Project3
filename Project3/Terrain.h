@@ -6,6 +6,8 @@
 
 DirectX::SimpleMath::Vector3 FloorV3(const DirectX::SimpleMath::Vector3& v);
 
+DirectX::SimpleMath::Vector2 FloorV2(const DirectX::SimpleMath::Vector2& v);
+
 DirectX::SimpleMath::Vector3 FracV3(const DirectX::SimpleMath::Vector3& v);
 
 // deterministic random function for noise using xz
@@ -18,6 +20,9 @@ float Smoothstep(float a, float low, float high);
 
 // noise function to grid y
 float CalcTerrainHeight(const DirectX::SimpleMath::Vector3& pos, float noiseScale = 1.0f, float voronoi = 1.0f, float smooth = 1.0f, float seed = 43758.5453f);
+
+
+float CalcTerrainHeight2(const DirectX::SimpleMath::Vector3& pos, float noiseScale = 1.0f);
 
 // normal for initialisig terrain
 DirectX::SimpleMath::Vector3 CalcTerrianNormal(

@@ -91,7 +91,7 @@ private:
     void UpdateObjectCBs(const GameTimer& gt);
     void UpdateMaterialBuffer(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
-	void LoadTexture(const std::wstring& filename, const std::string& name);
+		void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
 		void BuildAudio();
     void BuildRootSignature();
@@ -700,7 +700,7 @@ void Application::BuildTerrainGeometry()
 {
 	GeometryGenerator geoGen;
 
-	const DirectX::SimpleMath::Vector3 terrainRes(10.0f);
+	const DirectX::SimpleMath::Vector3 terrainRes(50.0f);
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(terrainRes.x, terrainRes.y, 128, 128);
 
 	//
@@ -709,14 +709,15 @@ void Application::BuildTerrainGeometry()
 	// sandy looking beaches, grassy low hills, and snow mountain peaks.
 	//
 
+	const float noiseScale = 0.1f;
 
 	std::vector<Vertex> vertices(grid.Vertices.size());
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
 		auto& p = grid.Vertices[i].Position;
 		vertices[i].Pos = p;
-		vertices[i].Pos.y = CalcTerrainHeight(p);
-		vertices[i].Normal = CalcTerrianNormal(p, terrainRes);// { 0.0f, 1.0f, 0.0f };
+		vertices[i].Pos.y = CalcTerrainHeight2(p, noiseScale) * 3.0f;// (p, 1.0f, 10.0f, 10.0f);
+		vertices[i].Normal = CalcTerrianNormal(p, terrainRes,0.1f, noiseScale) /** 0.5f + DirectX::SimpleMath::Vector3(5.0f)*/;// { 0.0f, 1.0f, 0.0f }; ((i % 3 == 0) ? DirectX::SimpleMath::Vector3{ 0.0f, 1.0f, 0.0f } : DirectX::SimpleMath::Vector3{ 1.0f, 0.0f, 0.0f });// CalcTerrianNormal(p, terrainRes);// { 0.0f, 1.0f, 0.0f };
 		vertices[i].TexC = grid.Vertices[i].TexC;
 	}
 
@@ -753,12 +754,6 @@ void Application::BuildTerrainGeometry()
 	geo->DrawArgs["grid"] = submesh;
 
 	mGeometries["landGeo"] = std::move(geo);
-
-
-
-
-
-
 
 
 }
