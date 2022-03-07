@@ -98,6 +98,7 @@ private:
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
     void BuildGeometry();
+	void BuildEnemySpritesGeometry();
     void BuildPSOs();
     void BuildFrameResources();
 	void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
@@ -337,6 +338,10 @@ void Application::Draw(const GameTimer& gt)
 
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
+
+
+	mCommandList->OMSetStencilRef(0);
+	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
 	
 
@@ -575,7 +580,7 @@ void Application::LoadTextures()
 
 	auto tempTex = std::make_unique<Texture>();
 	tempTex->Name = "tempTex";
-	tempTex->Filename = L"Data/Textures/tile.dds";
+	tempTex->Filename = L"Data/Textures/Tentacle.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), tempTex->Filename.c_str(),
 		tempTex->Resource, tempTex->UploadHeap));
@@ -702,6 +707,7 @@ void Application::BuildShadersAndInputLayout()
 
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["alphaTestedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_1");
 
 	mInputLayout =
 	{
@@ -766,6 +772,70 @@ void Application::BuildGeometry()
 	}
 }
 
+void Application::BuildEnemySpritesGeometry()
+{
+	struct CacoSpriteVertex
+	{
+		XMFLOAT3 Pos;
+		XMFLOAT2 Size;
+	};
+
+	static const int cacoCount = 3;
+	std::array<CacoSpriteVertex, 5> vertices;
+	for (UINT i = 0; i < cacoCount; ++i)
+	{
+		float x = MathHelper::RandF(-45.0f, 45.0f);
+		float z = MathHelper::RandF(-45.0f, 45.0f);
+		float y = 0.f; //REPLACE WHEN FLOOR HEIGHT IS DECIDED
+
+		// Move enemy high above land height.
+		y += 35.0f;
+
+		vertices[i].Pos = XMFLOAT3(x, y, z);
+		vertices[i].Size = XMFLOAT2(20.0f, 20.0f);
+	}
+
+	std::array<std::uint16_t, 16> indices =
+	{
+		0, 1, 2, 3, 4, 5, 6, 7,
+		8, 9, 10, 11, 12, 13, 14, 15
+	};
+
+
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(CacoSpriteVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "enemySpritesGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(CacoSpriteVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs["enemypoints"] = submesh;
+
+	mGeometries["enemySpritesGeo"] = std::move(geo);
+}
+
 void Application::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
@@ -825,6 +895,42 @@ void Application::BuildPSOs()
 
 	highlightPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&highlightPsoDesc, IID_PPV_ARGS(&mPSOs["highlight"])));
+
+
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPSODesc = opaquePsoDesc;
+	alphaTestedPSODesc.PS = {
+		reinterpret_cast<BYTE*>(mShaders["alphaTestedPS"]->GetBufferPointer()), 
+		mShaders["alphaTestedPS"]->GetBufferSize()
+	};
+	alphaTestedPSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestedPSODesc, IID_PPV_ARGS(&mPSOs["alphaTested"])));
+
+	//BILLBOARDED ENEMY PSO
+	//All Commented Out Until Geom Shader Is Properly Set Up, Along With Enemy Geometry
+
+	//D3D12_GRAPHICS_PIPELINE_STATE_DESC enemySpritePsoDesc = opaquePsoDesc;
+	//enemySpritePsoDesc.VS =
+	//{
+	//	reinterpret_cast<BYTE*>(mShaders["cacoSpriteVS"]->GetBufferPointer()),
+	//	mShaders["cacoSpriteVS"]->GetBufferSize()
+	//};
+	//enemySpritePsoDesc.GS =
+	//{
+	//	reinterpret_cast<BYTE*>(mShaders["cacoSpriteGS"]->GetBufferPointer()),
+	//	mShaders["cacoSpriteGS"]->GetBufferSize()
+	//};
+	//enemySpritePsoDesc.PS =
+	//{
+	//	reinterpret_cast<BYTE*>(mShaders["cacoSpritePS"]->GetBufferPointer()),
+	//	mShaders["cacoSpritePS"]->GetBufferSize()
+	//};
+	//enemySpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	//enemySpritePsoDesc.InputLayout = { mEnemySpriteInputLayout.data(), (UINT)mEnemySpriteInputLayout.size() };
+	//enemySpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	//
+	//ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&enemySpritePsoDesc, IID_PPV_ARGS(&mPSOs["enemySprites"])));
+
 }
 
 void Application::BuildFrameResources()
@@ -860,6 +966,10 @@ void Application::BuildMaterials()
 	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+
+
+	// MATT TEXTURE STUFF
+	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
 
 	// todo: uncomment if the Material names are same as texture names
 	/*std::for_each(mTextures.begin(), mTextures.end(), [&](auto& p)
@@ -908,7 +1018,7 @@ void Application::BuildRenderItems()
 	XMStoreFloat4x4(&floor->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
 	// boss
-	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Tentacle");
 	// boss transformations
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ) * XMMatrixTranslation(posX, posY, posZ));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
