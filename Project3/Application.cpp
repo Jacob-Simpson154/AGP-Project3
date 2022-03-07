@@ -97,6 +97,7 @@ private:
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
     void BuildGeometry();
+	void BuildEnemySpritesGeometry();
     void BuildPSOs();
     void BuildFrameResources();
 		void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
@@ -754,6 +755,70 @@ void Application::BuildGeometry()
 	}
 }
 
+void Application::BuildEnemySpritesGeometry()
+{
+	struct CacoSpriteVertex
+	{
+		XMFLOAT3 Pos;
+		XMFLOAT2 Size;
+	};
+
+	static const int cacoCount = 3;
+	std::array<CacoSpriteVertex, 5> vertices;
+	for (UINT i = 0; i < cacoCount; ++i)
+	{
+		float x = MathHelper::RandF(-45.0f, 45.0f);
+		float z = MathHelper::RandF(-45.0f, 45.0f);
+		float y = 0.f; //REPLACE WHEN FLOOR HEIGHT IS DECIDED
+
+		// Move enemy high above land height.
+		y += 35.0f;
+
+		vertices[i].Pos = XMFLOAT3(x, y, z);
+		vertices[i].Size = XMFLOAT2(20.0f, 20.0f);
+	}
+
+	std::array<std::uint16_t, 16> indices =
+	{
+		0, 1, 2, 3, 4, 5, 6, 7,
+		8, 9, 10, 11, 12, 13, 14, 15
+	};
+
+
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(CacoSpriteVertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "enemySpritesGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(CacoSpriteVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs["enemypoints"] = submesh;
+
+	mGeometries["enemySpritesGeo"] = std::move(geo);
+}
+
 void Application::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
@@ -823,6 +888,32 @@ void Application::BuildPSOs()
 	};
 	alphaTestedPSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestedPSODesc, IID_PPV_ARGS(&mPSOs["alphaTested"])));
+
+	//BILLBOARDED ENEMY PSO
+	//All Commented Out Until Geom Shader Is Properly Set Up, Along With Enemy Geometry
+
+	//D3D12_GRAPHICS_PIPELINE_STATE_DESC enemySpritePsoDesc = opaquePsoDesc;
+	//enemySpritePsoDesc.VS =
+	//{
+	//	reinterpret_cast<BYTE*>(mShaders["cacoSpriteVS"]->GetBufferPointer()),
+	//	mShaders["cacoSpriteVS"]->GetBufferSize()
+	//};
+	//enemySpritePsoDesc.GS =
+	//{
+	//	reinterpret_cast<BYTE*>(mShaders["cacoSpriteGS"]->GetBufferPointer()),
+	//	mShaders["cacoSpriteGS"]->GetBufferSize()
+	//};
+	//enemySpritePsoDesc.PS =
+	//{
+	//	reinterpret_cast<BYTE*>(mShaders["cacoSpritePS"]->GetBufferPointer()),
+	//	mShaders["cacoSpritePS"]->GetBufferSize()
+	//};
+	//enemySpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	//enemySpritePsoDesc.InputLayout = { mEnemySpriteInputLayout.data(), (UINT)mEnemySpriteInputLayout.size() };
+	//enemySpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	//
+	//ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&enemySpritePsoDesc, IID_PPV_ARGS(&mPSOs["enemySprites"])));
+
 }
 
 void Application::BuildFrameResources()
