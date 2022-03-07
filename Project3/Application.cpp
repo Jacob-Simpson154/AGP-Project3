@@ -320,6 +320,10 @@ void Application::Draw(const GameTimer& gt)
 
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
+
+
+	mCommandList->OMSetStencilRef(0);
+	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
 	
 
@@ -558,7 +562,7 @@ void Application::LoadTextures()
 
 	auto tempTex = std::make_unique<Texture>();
 	tempTex->Name = "tempTex";
-	tempTex->Filename = L"Data/Textures/tile.dds";
+	tempTex->Filename = L"Data/Textures/Tentacle.dds";
 	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
 		mCommandList.Get(), tempTex->Filename.c_str(),
 		tempTex->Resource, tempTex->UploadHeap));
@@ -685,6 +689,7 @@ void Application::BuildShadersAndInputLayout()
 
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["alphaTestedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", alphaTestDefines, "PS", "ps_5_1");
 
 	mInputLayout =
 	{
@@ -808,6 +813,16 @@ void Application::BuildPSOs()
 
 	highlightPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&highlightPsoDesc, IID_PPV_ARGS(&mPSOs["highlight"])));
+
+
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPSODesc = opaquePsoDesc;
+	alphaTestedPSODesc.PS = {
+		reinterpret_cast<BYTE*>(mShaders["alphaTestedPS"]->GetBufferPointer()), 
+		mShaders["alphaTestedPS"]->GetBufferSize()
+	};
+	alphaTestedPSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestedPSODesc, IID_PPV_ARGS(&mPSOs["alphaTested"])));
 }
 
 void Application::BuildFrameResources()
@@ -843,6 +858,10 @@ void Application::BuildMaterials()
 	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+
+
+	// MATT TEXTURE STUFF
+	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
 
 	// todo: uncomment if the Material names are same as texture names
 	/*std::for_each(mTextures.begin(), mTextures.end(), [&](auto& p)
@@ -891,7 +910,7 @@ void Application::BuildRenderItems()
 	XMStoreFloat4x4(&floor->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
 	// boss
-	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Tentacle");
 	// boss transformations
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ) * XMMatrixTranslation(posX, posY, posZ));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
