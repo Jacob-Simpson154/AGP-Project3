@@ -8,6 +8,7 @@
 #include "Weapon.h"
 #include "Boss.h"
 #include "OBJ_Loader.h"
+#include "Terrain.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -96,6 +97,7 @@ private:
     void BuildRootSignature();
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
+		void BuildTerrainGeometry();
     void BuildGeometry();
     void BuildPSOs();
     void BuildFrameResources();
@@ -218,7 +220,7 @@ bool Application::Initialize()
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildGeometry();
-
+	BuildTerrainGeometry();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -694,6 +696,73 @@ void Application::BuildShadersAndInputLayout()
 	};
 }
 
+void Application::BuildTerrainGeometry()
+{
+	GeometryGenerator geoGen;
+
+	const DirectX::SimpleMath::Vector3 terrainRes(10.0f);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(terrainRes.x, terrainRes.y, 128, 128);
+
+	//
+	// Extract the vertex elements we are interested and apply the height function to
+	// each vertex.  In addition, color the vertices based on their height so we have
+	// sandy looking beaches, grassy low hills, and snow mountain peaks.
+	//
+
+
+	std::vector<Vertex> vertices(grid.Vertices.size());
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	{
+		auto& p = grid.Vertices[i].Position;
+		vertices[i].Pos = p;
+		vertices[i].Pos.y = CalcTerrainHeight(p);
+		vertices[i].Normal = CalcTerrianNormal(p, terrainRes);// { 0.0f, 1.0f, 0.0f };
+		vertices[i].TexC = grid.Vertices[i].TexC;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+
+	std::vector<std::uint16_t> indices = grid.GetIndices16();
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "landGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs["grid"] = submesh;
+
+	mGeometries["landGeo"] = std::move(geo);
+
+
+
+
+
+
+
+
+}
+
 /// <summary>
 /// Construct all geometry, needs to be done prior to run time
 /// </summary>
@@ -897,7 +966,11 @@ void Application::BuildRenderItems()
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	bossBox = BoundingBox(XMFLOAT3(posX, posY, posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
 
-
+	{
+		auto terrain = BuildRenderItem(objectCBIndex, "landGeo", "grid", "Red");
+		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(terrain.get());
+		mAllRitems.push_back(std::move(terrain));
+	}
 
 	// Ammo crate
 	{
