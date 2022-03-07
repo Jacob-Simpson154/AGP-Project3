@@ -90,6 +90,7 @@ private:
     void UpdateObjectCBs(const GameTimer& gt);
     void UpdateMaterialBuffer(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
+	void UpdateMovement();
 	void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
 		void BuildAudio();
@@ -154,6 +155,7 @@ private:
 	Weapon currentGun;
 
 	float mAudioVolume = 0.3f;
+	float tt = 0.9f;
 };
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -266,6 +268,9 @@ void Application::Update(const GameTimer& gt)
 	mGameAudio.Update(mTimer.DeltaTime(), mCamera.GetPosition3f(), mCamera.GetLook3f(), mCamera.GetUp3f());
 
 	AnimateMaterials(gt);
+
+	UpdateMovement();
+
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
@@ -436,6 +441,18 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 void Application::AnimateMaterials(const GameTimer& gt)
 {
 
+}
+
+void Application::UpdateMovement()
+{
+	float posX = 0.0f;	float scaleX = 1.0f;
+	float posY = 1.0f;	float scaleY = 5.0f;
+	float posZ = 0.0f;	float scaleZ = 1.0f;
+
+
+	XMStoreFloat4x4(&mAllRitems.at(5).get()->position, XMMatrixTranslation(posX, posY + tt, posZ));
+	mAllRitems.at(5).get()->NumFramesDirty = gNumFrameResources;
+	tt += 0.01f;
 }
 
 void Application::UpdateObjectCBs(const GameTimer& gt)
