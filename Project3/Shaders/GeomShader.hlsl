@@ -1,3 +1,38 @@
+// Constant data that varies per frame.
+cbuffer cbPerObject : register(b0)
+{
+	float4x4 gWorld;
+	float4x4 gTexTransform;
+};
+
+// Constant data that varies per material.
+cbuffer cbPass : register(b1)
+{
+	float4x4 gView;
+	float4x4 gInvView;
+	float4x4 gProj;
+	float4x4 gInvProj;
+	float4x4 gViewProj;
+	float4x4 gInvViewProj;
+	float3 gEyePosW;
+	float cbPerObjectPad1;
+	float2 gRenderTargetSize;
+	float2 gInvRenderTargetSize;
+	float gNearZ;
+	float gFarZ;
+	float gTotalTime;
+	float gDeltaTime;
+	float4 gAmbientLight;
+};
+
+cbuffer cbMaterial : register(b2)
+{
+	float4   gDiffuseAlbedo;
+	float3   gFresnelR0;
+	float    gRoughness;
+	float4x4 gMatTransform;
+};
+
 [maxvertexcount(4)]
 void GSAxialBillboarding(point VertexOut gin[1], uint primID : SV_PrimitiveID, inout TriangleStream<GeoOut> triStream)
 {
