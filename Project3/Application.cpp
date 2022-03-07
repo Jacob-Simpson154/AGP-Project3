@@ -8,6 +8,7 @@
 #include "Weapon.h"
 #include "Boss.h"
 #include "OBJ_Loader.h"
+#include "AmmoBox.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -92,7 +93,7 @@ private:
     void UpdateMainPassCB(const GameTimer& gt);
 	void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
-		void BuildAudio();
+	void BuildAudio();
     void BuildRootSignature();
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
@@ -100,13 +101,12 @@ private:
 	void BuildEnemySpritesGeometry();
     void BuildPSOs();
     void BuildFrameResources();
-		void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
+	void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
     void BuildMaterials();
-		// auto increment obj cb index
-		std::unique_ptr<RenderItem> BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	std::unique_ptr<RenderItem> BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     void BuildRenderItems();
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
-		void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
+	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
 	void CheckCameraCollision();
     std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
@@ -147,8 +147,8 @@ private:
 	AudioSystem mGameAudio;
 
 	BoundingBox bossBox;
-
 	BoundingBox ammoBox[4];
+	AmmoBox ammoBoxClass[4];
 	BoundingBox cameraBox;
 
 	Boss bossStats;
@@ -212,6 +212,11 @@ bool Application::Initialize()
 
 	bossStats.Setup(0, 100);
 	currentGun.Setup("Pistol", 25, 7);
+	ammoBoxClass[0] = AmmoBox(20);
+	ammoBoxClass[1] = AmmoBox(30);
+	ammoBoxClass[2] = AmmoBox(40);
+	ammoBoxClass[3] = AmmoBox(50);
+
 
 	BuildAudio();
 	LoadTextures();
@@ -270,6 +275,18 @@ void Application::Update(const GameTimer& gt)
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
+
+	int ammoIndex = 0;
+	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
+	{
+		ammoBoxClass[ammoIndex].Update(gt.DeltaTime());
+		if (ammoBoxClass[ammoIndex].hasBeenConsumed == false)
+		{
+			ri->shouldRender = true;
+		}
+		
+		ammoIndex++;
+	}
 }
 
 /// <summary>
@@ -1239,7 +1256,7 @@ void Application::CheckCameraCollision()
 		{
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
-			currentGun.AddAmmo(50);
+			currentGun.AddAmmo(ammoBoxClass[counter].Consume());
 		}
 	}
 
