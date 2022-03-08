@@ -30,14 +30,8 @@ DirectX::SimpleMath::Vector3 Hash(DirectX::SimpleMath::Vector3 p, float seed)
   return a - b;
 }
 
-DirectX::SimpleMath::Vector2 Hash2(DirectX::SimpleMath::Vector2 v)
+DirectX::SimpleMath::Vector2 Hash2(DirectX::SimpleMath::Vector2 v, float seed)
 {
-  // return fract(
-  //              sin(
-  //                  vec2(
-  //                      dot(v,vec2(127.1,311.7))     ,      dot(v,vec2(269.5,183.3))       )
-  //                  )*43758.5453
-  //              );
 
   DirectX::SimpleMath::Vector2 d = {
     sinf(v.Dot(DirectX::SimpleMath::Vector2(127.1f, 311.7f))),
@@ -78,89 +72,69 @@ float Smoothstep(float a, float low, float high)
 
 
 
-float CalcTerrainHeight(const DirectX::SimpleMath::Vector3& pos, float noiseScale, float voronoi, float smooth, float seed)
+
+// params:
+//  noiseScale - size of noise. smaller number for smoother terrain
+//  curveStrength - stretches terrain and smoothstep clamp between 0-1 
+float CalcTerrainHeight2(const DirectX::SimpleMath::Vector3& pos, const TerrainParams& tp)// float noiseScale, float curveStrength, float seed)
 {
-  const DirectX::SimpleMath::Vector3 scaledPos = pos * noiseScale;
-  // grid position
-  const DirectX::SimpleMath::Vector3 p = FloorV3(scaledPos);
-  // fractional position within grid
-  const DirectX::SimpleMath::Vector3 f = scaledPos - p;
-
-  // smoothness
-  const float k = 1.0f + 63.0f * pow(1.0 - smooth, 4.0);
-
-  float va = 0.0f;
-  float wt = 0.0f;
-  for (int j = -2; j <= 2; j++)
-  {
-    for (int i = -2; i <= 2; i++)
-    {
-
-      // neighbour offset
-      const DirectX::SimpleMath::Vector2 g = DirectX::SimpleMath::Vector3((float)i, 1.0f, (float)j);
-      const DirectX::SimpleMath::Vector3 o = Hash(p + g, seed) * DirectX::SimpleMath::Vector3(voronoi, 1.0f, voronoi);
-      const DirectX::SimpleMath::Vector2 r = g - DirectX::SimpleMath::Vector2(f.x, f.z) + DirectX::SimpleMath::Vector2(o.x, o.z);
-      const float d = r.Dot(r);
-      float ww = pow(1.0f - Smoothstep((float)sqrt(d), 0.0f, 1.414f), k);
-      va += o.y * ww;
-      wt += ww;
-    }
-  }
-
-  // return height
-  return f.x + f.z;//va / wt;
-}
 
 
-
-float CalcTerrainHeight2(const DirectX::SimpleMath::Vector3& pos, float noiseScale)
-{
-  const DirectX::SimpleMath::Vector2 scaledPos = DirectX::SimpleMath::Vector2{ pos.x,pos.z } * noiseScale;
+  const DirectX::SimpleMath::Vector2 scaledPos = DirectX::SimpleMath::Vector2{ pos.x,pos.z } * tp.noiseScale;
   // grid position
   const DirectX::SimpleMath::Vector2 ipos = FloorV2(scaledPos);
   // fractional position within grid
   const DirectX::SimpleMath::Vector2 fpos = scaledPos - ipos;
+
+  float curve = max(tp.curveStrength, 1.0f);
+  float curveOffset = tp.curveStrength * 0.5f - 0.5f;
+
 
   const float smooth = 1.0f;
   const float k = 1.0f + 63.0f * pow(1.0 - smooth, 4.0);
 
   float minDist = 1.0;
   DirectX::SimpleMath::Vector2 minPoint;
-
+  float res = minDist;
 
   for (int x = -1; x <= 1; ++x)
   {
     for (int y = -1; y <= 1; ++y)
     {
       const DirectX::SimpleMath::Vector2 ineighbour = DirectX::SimpleMath::Vector2(float(x), float(y));
-      const DirectX::SimpleMath::Vector2 point = Hash2(ipos + ineighbour);
+      const DirectX::SimpleMath::Vector2 point = Hash2(ipos + ineighbour, tp.seed);
       const DirectX::SimpleMath::Vector2 diff = point + ineighbour - fpos;
-      
-      const float dist = diff.Length() * k;
+
+      const float dist = diff.Length();
 
       if (dist < minDist)
       {
         minDist = dist;
+        res = minDist * curve - curveOffset;
         minPoint = point;
       }
     }
   }
 
+  return  (1.0f - Smoothstep(res, 0.0f, 1.0f)) * tp.heightMulti;
+}
 
-  return Smoothstep(minDist, 0.0f, 1.0f);
+DirectX::SimpleMath::Vector3 ApplyTerrainHeight(const DirectX::SimpleMath::Vector3& pos, const TerrainParams& tp)
+{
+  return { pos.x,CalcTerrainHeight2(pos,tp),pos.z };
 }
 
 DirectX::SimpleMath::Vector3 CalcTerrianNormal(const DirectX::SimpleMath::Vector3& pos, const DirectX::SimpleMath::Vector3& res, float normalScale, float noiseScale, float voronoi, float smooth, float seed)
 {
   const DirectX::SimpleMath::Vector3& step = DirectX::SimpleMath::Vector3(1.0f / res.x, 1.0f / res.y, 1.0f / res.z);
-
-  float height = CalcTerrainHeight(pos, noiseScale, voronoi, smooth, seed);
+  // todo normal amend
+  float height = 0.0f;// CalcTerrainHeight2(pos, noiseScale, voronoi, smooth, seed);
 
   DirectX::SimpleMath::Vector2 dxy =
     DirectX::SimpleMath::Vector2(height) - DirectX::SimpleMath::Vector3(
-      CalcTerrainHeight(pos + DirectX::SimpleMath::Vector2(step.x, 0.0f), noiseScale, voronoi, smooth, seed),
+      1.0f,//CalcTerrainHeight(pos + DirectX::SimpleMath::Vector2(step.x, 0.0f), noiseScale, voronoi, smooth, seed),
       1.0f,
-      CalcTerrainHeight(pos + DirectX::SimpleMath::Vector2(0.0f, step.z), noiseScale, voronoi, smooth, seed)
+      1.0f//CalcTerrainHeight(pos + DirectX::SimpleMath::Vector2(0.0f, step.z), noiseScale, voronoi, smooth, seed)
     );
 
   DirectX::SimpleMath::Vector3 normal = {
