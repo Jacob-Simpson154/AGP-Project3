@@ -8,7 +8,12 @@
 #include "Weapon.h"
 #include "Boss.h"
 #include "OBJ_Loader.h"
+#include "Terrain.h"
+#include "Util.h"
 #include "AmmoBox.h"
+
+#define TERRAIN 1
+
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -18,6 +23,11 @@ using namespace DirectX::PackedVector;
 #pragma comment(lib, "D3D12.lib")
 
 const int gNumFrameResources = 3;
+
+typedef DirectX::SimpleMath::Vector2 Vector2;
+typedef DirectX::SimpleMath::Vector3 Vector3;
+
+typedef DirectX::SimpleMath::Matrix Matrix;
 
 struct RenderItem
 {
@@ -91,12 +101,13 @@ private:
     void UpdateObjectCBs(const GameTimer& gt);
     void UpdateMaterialBuffer(const GameTimer& gt);
     void UpdateMainPassCB(const GameTimer& gt);
-	void LoadTexture(const std::wstring& filename, const std::string& name);
+		void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
 	void BuildAudio();
     void BuildRootSignature();
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
+		void BuildTerrainGeometry();
     void BuildGeometry();
 	void BuildEnemySpritesGeometry();
     void BuildPSOs();
@@ -153,7 +164,7 @@ private:
 
 	Boss bossStats;
 	Weapon currentGun;
-
+	TerrainParams terrainParam;
 	float mAudioVolume = 0.3f;
 };
 
@@ -224,6 +235,9 @@ bool Application::Initialize()
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildGeometry();
+#if TERRAIN
+	BuildTerrainGeometry();
+#endif // TERRAIN
 
 	BuildMaterials();
 	BuildRenderItems();
@@ -717,6 +731,67 @@ void Application::BuildShadersAndInputLayout()
 	};
 }
 
+void Application::BuildTerrainGeometry()
+{
+	GeometryGenerator geoGen;
+	srand(time(0));
+
+	const DirectX::SimpleMath::Vector2 terrainRes(200.0f);
+	
+	// terrain parameters
+	terrainParam.noiseScale = RandFloat(0.01f, 0.05f);
+	terrainParam.seed = RandFloat(1.0f, 1000000.0f);
+	terrainParam.curveStrength = RandFloat(1.0f, 3.0f);
+	terrainParam.heightMulti = RandFloat(1.0f, 3.0f);
+
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(terrainRes.x, terrainRes.y, 128, 128);
+
+	std::vector<Vertex> vertices(grid.Vertices.size());
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	{
+		auto& p = grid.Vertices[i].Position;
+		vertices[i].Pos = p;
+		vertices[i].Pos.y = CalcTerrainHeight2(p, terrainParam);// (p, 1.0f, 10.0f, 10.0f);
+		vertices[i].Normal = ((i % 3 == 0) ? DirectX::SimpleMath::Vector3{ 0.0f, 1.0f, 0.0f } : DirectX::SimpleMath::Vector3{ 1.0f, 0.0f, 0.0f });// CalcTerrianNormal(p, DirectX::SimpleMath::Vector3{128.0f,128.0f,128.0f}, 0.1f, noiseScale);
+		vertices[i].TexC = grid.Vertices[i].TexC;
+	}
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+
+	std::vector<std::uint16_t> indices = grid.GetIndices16();
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "landGeo";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs["grid"] = submesh;
+
+	mGeometries["landGeo"] = std::move(geo);
+
+}
+
 /// <summary>
 /// Construct all geometry, needs to be done prior to run time
 /// </summary>
@@ -1008,67 +1083,54 @@ void Application::BuildRenderItems()
 	float posY = 1.0f;	float scaleY = 5.0f;
 	float posZ = 0.0f;	float scaleZ = 1.0f;
 
+	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
+	DirectX::SimpleMath::Vector3 scale = { 1.0f,5.0f,1.0f };
+	position.y += 2.5f;
 	//Build render items here
 	UINT objectCBIndex = 0;
-
-	// floor
-	auto floor = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Grey");
-	// floor transformations
-	XMStoreFloat4x4(&floor->position, XMMatrixScaling(25.0f, 1.0f, 25.0f) * XMMatrixTranslation(0.0f, -1.0f, 0.0f));
-	XMStoreFloat4x4(&floor->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 
 	// boss
 	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Tentacle");
 	// boss transformations
-	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scaleX, scaleY, scaleZ) * XMMatrixTranslation(posX, posY, posZ));
+	XMStoreFloat4x4(&boss->position, Matrix::CreateScale(scale) * Matrix::CreateTranslation(position));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	bossBox = BoundingBox(XMFLOAT3(posX, posY, posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
-
-
+	bossBox = BoundingBox(position, scale);
 
 	// Ammo crate
 	{
-		auto ammoCrate_01 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
-		XMStoreFloat4x4(&ammoCrate_01->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(-5, 2, 0));
-		XMStoreFloat4x4(&ammoCrate_01->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-		ammoBox[0]= BoundingBox(XMFLOAT3(-5, 2, 0), XMFLOAT3(2, 2, 2));
-		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_01.get());
-		mAllRitems.push_back(std::move(ammoCrate_01));		
-		
-		auto ammoCrate_02 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
-		XMStoreFloat4x4(&ammoCrate_02->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(5, 2, 0));
-		XMStoreFloat4x4(&ammoCrate_02->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-		ammoBox[1]= BoundingBox(XMFLOAT3(5, 2, 0), XMFLOAT3(2, 2, 2));
-		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_02.get());
-		mAllRitems.push_back(std::move(ammoCrate_02));		
-		
-		auto ammoCrate_03 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
-		XMStoreFloat4x4(&ammoCrate_03->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(0, 2, -5));
-		XMStoreFloat4x4(&ammoCrate_03->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-		ammoBox[2]= BoundingBox(XMFLOAT3(0, 2, -5), XMFLOAT3(2, 2, 2));
-		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_03.get());
-		mAllRitems.push_back(std::move(ammoCrate_03));		
-		
-		auto ammoCrate_04 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
-		XMStoreFloat4x4(&ammoCrate_04->position, XMMatrixScaling(2, 2, 2) * XMMatrixTranslation(0, 2, 5));
-		XMStoreFloat4x4(&ammoCrate_04->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-		ammoBox[3]= BoundingBox(XMFLOAT3(0, 2, 5), XMFLOAT3(2, 2, 2));
-		mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate_04.get());
-		mAllRitems.push_back(std::move(ammoCrate_04));		
+		// set scale for ammo
+		scale = { 2.0f,2.0f,2.0f };
+
+		for (size_t i = 0; i < 4; i++)
+		{
+			position.x = sin((float)i) * RandFloat(10.0f,50.0f);
+			position.z = cos((float)i) * RandFloat(10.0f,50.0f);
+
+			// slight inset into terrain
+			position = ApplyTerrainHeight(position, terrainParam);
+			position.y += 0.8f;
+
+			auto ammoCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
+			XMStoreFloat4x4(&ammoCrate->position, Matrix::CreateScale(scale) * Matrix::CreateTranslation(position));
+			ammoBox[i] = BoundingBox(position, scale);
+			mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate.get());
+			mAllRitems.push_back(std::move(ammoCrate));
+		}
 	}
 
-
-
+#if TERRAIN
+	{
+		auto terrain = BuildRenderItem(objectCBIndex, "landGeo", "grid", "Red");
+		mRitemLayer[(int)RenderLayer::World].emplace_back(terrain.get());
+		mAllRitems.push_back(std::move(terrain));
+	}
+#endif
 	
 	// render items to layer
-	mRitemLayer[(int)RenderLayer::World].emplace_back(floor.get());
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
 
 	// render items to all render items
-	mAllRitems.push_back(std::move(floor));
 	mAllRitems.push_back(std::move(boss));
-	
-
 }
 
 /// <summary>
