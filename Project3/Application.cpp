@@ -18,46 +18,46 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 
-struct RenderItem
-{
-	RenderItem() = default;
-	RenderItem(const RenderItem & rhs) = delete;
-	
-	/// <summary>
-	/// Controls visibility
-	/// </summary>
-	bool shouldRender = true;
-	/// <summary>
-	/// This items material
-	/// </summary>
-	Material* material = nullptr;
-	/// <summary>
-	/// This items geometry
-	/// </summary>
-	MeshGeometry* geometry = nullptr;
-	/// <summary>
-	/// Objects index, should increment 
-	/// per render item
-	/// </summary>
-	UINT objectCBIndex = -1;
-	/// <summary>
-	/// Position in world
-	/// </summary>
-	XMFLOAT4X4 position = MathHelper::Identity4x4();
-	XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
-
-	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
-	// Because we have an object cbuffer for each FrameResource, we have to apply the
-	// update to each FrameResource.  Thus, when we modify obect data we should set 
-	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
-	int NumFramesDirty = gNumFrameResources;
-	// Primitive topology.
-	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	// DrawIndexedInstanced parameters.
-	UINT IndexCount = 0;
-	UINT StartIndexLocation = 0;
-	int BaseVertexLocation = 0;
-};
+//struct RenderItem
+//{
+//	RenderItem() = default;
+//	RenderItem(const RenderItem & rhs) = delete;
+//	
+//	/// <summary>
+//	/// Controls visibility
+//	/// </summary>
+//	bool shouldRender = true;
+//	/// <summary>
+//	/// This items material
+//	/// </summary>
+//	Material* material = nullptr;
+//	/// <summary>
+//	/// This items geometry
+//	/// </summary>
+//	MeshGeometry* geometry = nullptr;
+//	/// <summary>
+//	/// Objects index, should increment 
+//	/// per render item
+//	/// </summary>
+//	UINT objectCBIndex = -1;
+//	/// <summary>
+//	/// Position in world
+//	/// </summary>
+//	XMFLOAT4X4 position = MathHelper::Identity4x4();
+//	XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
+//
+//	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
+//	// Because we have an object cbuffer for each FrameResource, we have to apply the
+//	// update to each FrameResource.  Thus, when we modify obect data we should set 
+//	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
+//	int NumFramesDirty = gNumFrameResources;
+//	// Primitive topology.
+//	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+//	// DrawIndexedInstanced parameters.
+//	UINT IndexCount = 0;
+//	UINT StartIndexLocation = 0;
+//	int BaseVertexLocation = 0;
+//};
 enum class RenderLayer : int
 {
 	World = 0,
@@ -211,7 +211,7 @@ bool Application::Initialize()
 		XMFLOAT3(0.0f, 1.0f, 0.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f));
 
-	bossStats.Setup(0, 100);
+	//bossStats.Setup(0, 100);
 	currentGun.Setup("Pistol", 25, 7);
 
 	BuildAudio();
@@ -225,6 +225,7 @@ bool Application::Initialize()
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSOs();
+	bossStats.Setup(0, 100, mAllRitems.at(5).get());//Possibly move this somewhere else in order to setup the geometry
 
 	cameraBox = BoundingBox(mCamera.GetPosition3f(), XMFLOAT3(1, 1, 1));
 
@@ -445,14 +446,7 @@ void Application::AnimateMaterials(const GameTimer& gt)
 
 void Application::UpdateMovement()
 {
-	float posX = 0.0f;	float scaleX = 1.0f;
-	float posY = 1.0f;	float scaleY = 5.0f;
-	float posZ = 0.0f;	float scaleZ = 1.0f;
-
-
-	XMStoreFloat4x4(&mAllRitems.at(5).get()->position, XMMatrixTranslation(posX, posY + tt, posZ));
-	mAllRitems.at(5).get()->NumFramesDirty = gNumFrameResources;
-	tt += 0.01f;
+	bossStats.UpdateMovement();
 }
 
 void Application::UpdateObjectCBs(const GameTimer& gt)
