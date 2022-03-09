@@ -735,18 +735,32 @@ void Application::BuildTerrainGeometry()
 	terrainParam.noiseScale = RandFloat(0.01f, 0.05f);
 	terrainParam.seed = RandFloat(1.0f, 1000000.0f);
 	terrainParam.curveStrength = RandFloat(1.0f, 3.0f);
-	terrainParam.heightMulti = RandFloat(1.0f, 3.0f);
+	terrainParam.heightMulti = RandFloat(3.0f, 10.0f);
 
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(terrainRes.x, terrainRes.y, 128, 128);
 
+
 	std::vector<Vertex> vertices(grid.Vertices.size());
+
+	// apply terrain height to grid
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
-		auto& p = grid.Vertices[i].Position;
-		vertices[i].Pos = p;
-		vertices[i].Pos.y = CalcTerrainHeight2(p, terrainParam);// (p, 1.0f, 10.0f, 10.0f);
-		vertices[i].Normal = ((i % 3 == 0) ? DirectX::SimpleMath::Vector3{ 0.0f, 1.0f, 0.0f } : DirectX::SimpleMath::Vector3{ 1.0f, 0.0f, 0.0f });// CalcTerrianNormal(p, DirectX::SimpleMath::Vector3{128.0f,128.0f,128.0f}, 0.1f, noiseScale);
+		//grid.Vertices[i].Position.y = CalcTerrainHeight2(grid.Vertices[i].Position, terrainParam);
+		grid.Vertices[i].Position = ApplyTerrainHeight(grid.Vertices[i].Position, terrainParam);
+	}
+
+	CalcTerrianNormal2(grid);
+
+	for (size_t i = 0; i < grid.Vertices.size(); ++i)
+	{
+		vertices[i].Pos = grid.Vertices[i].Position;
+		vertices[i].Normal = grid.Vertices[i].Normal;
 		vertices[i].TexC = grid.Vertices[i].TexC;
+		//auto& p = grid.Vertices[i].Position;
+		//vertices[i].Pos = p;
+		//vertices[i].Pos.y = CalcTerrainHeight2(p, terrainParam);// (p, 1.0f, 10.0f, 10.0f);
+		//vertices[i].Normal = ((i % 3 == 0) ? DirectX::SimpleMath::Vector3{ 0.0f, 1.0f, 0.0f } : DirectX::SimpleMath::Vector3{ 1.0f, 0.0f, 0.0f });// CalcTerrianNormal(p, DirectX::SimpleMath::Vector3{128.0f,128.0f,128.0f}, 0.1f, noiseScale);
+		//vertices[i].TexC = grid.Vertices[i].TexC;
 	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);

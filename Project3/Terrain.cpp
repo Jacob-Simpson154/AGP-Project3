@@ -145,3 +145,42 @@ DirectX::SimpleMath::Vector3 CalcTerrianNormal(const DirectX::SimpleMath::Vector
   normal.Normalize();
   return normal;
 }
+
+
+void CalcTerrianNormal2(GeometryGenerator::MeshData& grid)
+{
+  // vertex index 
+  size_t i0, i1, i2;
+
+  for (size_t i = 0; i < grid.Indices32.size(); i += 3)
+  {
+    assert(i + 2 < grid.Indices32.size());
+    // 
+    i0 = grid.Indices32[i];
+    i1 = grid.Indices32[i+1];
+    i2 = grid.Indices32[i+2];
+
+    const DirectX::SimpleMath::Vector3 v0 = grid.Vertices.at(i0).Position;
+    const DirectX::SimpleMath::Vector3 v1 = grid.Vertices.at(i1).Position;
+    const DirectX::SimpleMath::Vector3 v2 = grid.Vertices.at(i2).Position;
+    // edge
+    const DirectX::SimpleMath::Vector3 e1 = v0 - v1;
+    const DirectX::SimpleMath::Vector3 e2 = v0 - v2;
+    // normal of face
+    const DirectX::SimpleMath::Vector3 c = e1.Cross(e2);
+
+    // accumulate normals
+    grid.Vertices.at(i0).Normal = c + grid.Vertices.at(i0).Normal;
+    grid.Vertices.at(i1).Normal = c + grid.Vertices.at(i1).Normal;
+    grid.Vertices.at(i2).Normal = c + grid.Vertices.at(i2).Normal;
+
+  }
+
+  // normalise
+  for (size_t i = 0; i < grid.Vertices.size(); ++i)
+  {
+    DirectX::SimpleMath::Vector3 n = grid.Vertices.at(i).Normal;
+    n.Normalize();
+    grid.Vertices.at(i).Normal = n;
+  }
+}

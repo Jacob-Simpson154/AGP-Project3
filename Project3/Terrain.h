@@ -3,6 +3,7 @@
 
 #include "SimpleMath.h"
 #include <algorithm>
+#include "Common/GeometryGenerator.h"
 
 struct TerrainParams
 {
@@ -44,3 +45,4 @@ DirectX::SimpleMath::Vector3 CalcTerrianNormal(
   float seed = 43758.5453f
 );
 
+void CalcTerrianNormal2(GeometryGenerator::MeshData& grid);
