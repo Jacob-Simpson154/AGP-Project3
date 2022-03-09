@@ -106,6 +106,8 @@ private:
 		void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
 		void BuildAudio();
+
+		void CreateSRV(const std::string& texName, CD3DX12_CPU_DESCRIPTOR_HANDLE& hdesc, D3D12_SRV_DIMENSION dim = D3D12_SRV_DIMENSION_TEXTURE2D);
     void BuildRootSignature();
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
@@ -588,6 +590,7 @@ void Application::LoadTextures()
 	LoadTexture(L"Data/Textures/white1x1.dds", "tex");
 	LoadTexture(L"Data/Textures/Tentacle.dds", "tempTex");
 	LoadTexture(L"Data/Textures/obstacle.dds", "houseTex");
+	LoadTexture(L"Data/Textures/terrain.dds", "terrainTex");
 }
 
 void Application::BuildAudio()
@@ -614,6 +617,20 @@ void Application::BuildAudio()
 		mGameAudio.Play("heroMusic");
 	}
 	
+}
+
+void Application::CreateSRV(const std::string& texName, CD3DX12_CPU_DESCRIPTOR_HANDLE& hdesc, D3D12_SRV_DIMENSION dim)
+{
+	auto tex = mTextures[texName]->Resource;
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = tex->GetDesc().Format;
+	srvDesc.ViewDimension = dim;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = tex->GetDesc().MipLevels;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	md3dDevice->CreateShaderResourceView(tex.Get(), &srvDesc, hdesc);
+
 }
 
 void Application::BuildRootSignature()
@@ -663,7 +680,7 @@ void Application::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 3;
+	srvHeapDesc.NumDescriptors = 4;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -673,33 +690,14 @@ void Application::BuildDescriptorHeaps()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto defaultDiffuseTex		= mTextures["tex"]->Resource;
-	auto tempBillboardingTex	= mTextures["tempTex"]->Resource;
-	auto houseTex	= mTextures["houseTex"]->Resource;
 
-
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = defaultDiffuseTex->GetDesc().Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = defaultDiffuseTex->GetDesc().MipLevels;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	md3dDevice->CreateShaderResourceView(defaultDiffuseTex.Get(), &srvDesc, hDescriptor);
-
-	// billboard tex
+	CreateSRV("tex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	srvDesc.Format = tempBillboardingTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = tempBillboardingTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(tempBillboardingTex.Get(), &srvDesc, hDescriptor);
-
-	// house tex
+	CreateSRV("tempTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	srvDesc.Format = houseTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = houseTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(houseTex.Get(), &srvDesc, hDescriptor);
-
+	CreateSRV("houseTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	CreateSRV("terrainTex", hDescriptor);
 
 
 }
@@ -735,17 +733,15 @@ void Application::BuildTerrainGeometry()
 	terrainParam.noiseScale = RandFloat(0.01f, 0.05f);
 	terrainParam.seed = RandFloat(1.0f, 1000000.0f);
 	terrainParam.curveStrength = RandFloat(1.0f, 3.0f);
-	terrainParam.heightMulti = RandFloat(3.0f, 10.0f);
+	terrainParam.heightMulti = RandFloat(2.0f, 5.0f);
 
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(terrainRes.x, terrainRes.y, 128, 128);
-
 
 	std::vector<Vertex> vertices(grid.Vertices.size());
 
 	// apply terrain height to grid
 	for (size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
-		//grid.Vertices[i].Position.y = CalcTerrainHeight2(grid.Vertices[i].Position, terrainParam);
 		grid.Vertices[i].Position = ApplyTerrainHeight(grid.Vertices[i].Position, terrainParam);
 	}
 
@@ -756,11 +752,6 @@ void Application::BuildTerrainGeometry()
 		vertices[i].Pos = grid.Vertices[i].Position;
 		vertices[i].Normal = grid.Vertices[i].Normal;
 		vertices[i].TexC = grid.Vertices[i].TexC;
-		//auto& p = grid.Vertices[i].Position;
-		//vertices[i].Pos = p;
-		//vertices[i].Pos.y = CalcTerrainHeight2(p, terrainParam);// (p, 1.0f, 10.0f, 10.0f);
-		//vertices[i].Normal = ((i % 3 == 0) ? DirectX::SimpleMath::Vector3{ 0.0f, 1.0f, 0.0f } : DirectX::SimpleMath::Vector3{ 1.0f, 0.0f, 0.0f });// CalcTerrianNormal(p, DirectX::SimpleMath::Vector3{128.0f,128.0f,128.0f}, 0.1f, noiseScale);
-		//vertices[i].TexC = grid.Vertices[i].TexC;
 	}
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
@@ -1062,6 +1053,7 @@ void Application::BuildMaterials()
 	// MATT TEXTURE STUFF
 	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
 	BuildMaterial(2, "HouseMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(3, "TerrainMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
 }
 
@@ -1092,8 +1084,8 @@ void Application::BuildRenderItems()
 	// initial values for boss
 	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
 	DirectX::SimpleMath::Vector3 scale = { 10.0f,10.0f,10.0f };
-	// slightly inset into ground
-	position.y += scale.y * 0.5f - 0.1f;
+	// on ground
+	position.y += scale.y * 0.5f;
 	//Build render items here
 	UINT objectCBIndex = 0;
 
@@ -1128,7 +1120,7 @@ void Application::BuildRenderItems()
 
 #if TERRAIN
 	{
-		auto terrain = BuildRenderItem(objectCBIndex, "landGeo", "grid", "Red");
+		auto terrain = BuildRenderItem(objectCBIndex, "landGeo", "grid", "TerrainMat");
 		mRitemLayer[(int)RenderLayer::World].emplace_back(terrain.get());
 		mAllRitems.push_back(std::move(terrain));
 	}
