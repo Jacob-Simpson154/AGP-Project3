@@ -12,8 +12,10 @@
 #include "Util.h"
 #include "AmmoBox.h"
 
-#define TERRAIN 1
+#include "Constants.h"
 
+#define TERRAIN 1
+#define OBSTACLE_TOGGLE 1
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -159,6 +161,7 @@ private:
 
 	BoundingBox bossBox;
 	BoundingBox ammoBox[4];
+	BoundingBox obstBox[gc::NUM_OBSTACLE];
 	AmmoBox ammoBoxClass[4];
 	BoundingBox cameraBox;
 
@@ -845,6 +848,15 @@ void Application::BuildGeometry()
 
 		mGeometries[geo->Name] = std::move(geo);
 	}
+
+#if OBSTACLE_TOGGLE
+	// build obstacle geom
+	for (size_t i = 0; i < gc::NUM_OBSTACLE; i++)
+	{
+		BuildObjGeometry(gc::OBSTACLE_DATA[i].filename, gc::OBSTACLE_DATA[i].geoName, gc::OBSTACLE_DATA[i].subGeoName);
+	}
+#endif //OBSTACLE_TOGGLE
+
 }
 
 void Application::BuildEnemySpritesGeometry()
@@ -1079,12 +1091,12 @@ std::unique_ptr<RenderItem> Application::BuildRenderItem(UINT& objCBindex, const
 void Application::BuildRenderItems()
 {
 
-	float posX = 0.0f;	float scaleX = 1.0f;
-	float posY = 1.0f;	float scaleY = 5.0f;
-	float posZ = 0.0f;	float scaleZ = 1.0f;
+	//float posX = 0.0f;	float scaleX = 1.0f;
+	//float posY = 1.0f;	float scaleY = 5.0f;
+	//float posZ = 0.0f;	float scaleZ = 1.0f;
 
 	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
-	DirectX::SimpleMath::Vector3 scale = { 1.0f,5.0f,1.0f };
+	DirectX::SimpleMath::Vector3 scale = { 10.0f,10.0f,10.0f };
 	position.y += 2.5f;
 	//Build render items here
 	UINT objectCBIndex = 0;
@@ -1103,8 +1115,8 @@ void Application::BuildRenderItems()
 
 		for (size_t i = 0; i < 4; i++)
 		{
-			position.x = sin((float)i) * RandFloat(10.0f,50.0f);
-			position.z = cos((float)i) * RandFloat(10.0f,50.0f);
+			position.x = sin((float)i) * RandFloat(10.0f,20.0f);
+			position.z = cos((float)i) * RandFloat(10.0f,20.0f);
 
 			// slight inset into terrain
 			position = ApplyTerrainHeight(position, terrainParam);
@@ -1126,6 +1138,27 @@ void Application::BuildRenderItems()
 	}
 #endif
 	
+#if OBSTACLE_TOGGLE
+	{
+	
+		for (size_t i = 0; i < gc::NUM_OBSTACLE; i++)
+		{
+
+			position.x = sin(2.0f*(float)i) * RandFloat(20.0f, 50.0f);
+			position.z = cos(2.0f*(float)i) * RandFloat(20.0f, 50.0f);
+			position = ApplyTerrainHeight(position, terrainParam);
+
+			auto obst = BuildRenderItem(objectCBIndex, gc::OBSTACLE_DATA[i].geoName, gc::OBSTACLE_DATA[i].subGeoName, "Red");
+
+			XMStoreFloat4x4(&obst->position, Matrix::CreateTranslation(position));
+			XMStoreFloat4x4(&obst->texTransform, Matrix::Identity);
+			obstBox[i] = BoundingBox(position, gc::OBSTACLE_DATA[i].boundingBox);
+			mRitemLayer[(int)RenderLayer::World].emplace_back(obst.get());
+			mAllRitems.push_back(std::move(obst));
+		}
+	}
+#endif
+
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
 
