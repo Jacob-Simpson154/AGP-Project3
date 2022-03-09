@@ -10,25 +10,30 @@
 // How to load textures
 //
 // Goto: Application::LoadTextures()
-//   LoadTexture(L"Data/Textures/white1x1.dds", L"defaultDiffuseTex");
+//   LoadTexture(L"Data/Textures/xxxxxxx.dds", L"xxxxxxxxTex");
 //
+// Goto: Application::BuildDescriptorHeaps()
+//    srvHeapDesc.NumDescriptors = num; // num += 1
+//
+//    ...
+// 
+//    hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+//    CreateSRV("xxxxxxxxTex",hDescriptor)
+
+
 
 // How to build Materials
 // Go to: Application::BuildMaterials()
 //
 //		int matIndex = 0;
 //
-//		BuildMaterial(matIndex, 0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
-//		BuildMaterial(matIndex, 0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+//		BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
+//		BuildMaterial(1, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
 //
-//		// todo: replace above with below if the Material names are same as texture names
-//		/*std::for_each(mTextures.begin(), mTextures.end(), [&](auto& p)
-//			{
-//				BuildMaterial(matIndex, matIndex, p.first);
-//			});*/
 
 
-// How to add render Items
+
+// How to add render Items with materials
 //Go to: Application::BuildRenderItems()
 // 
 //    //Build render items here
