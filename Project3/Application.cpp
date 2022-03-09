@@ -105,18 +105,18 @@ private:
     void UpdateMainPassCB(const GameTimer& gt);
 		void LoadTexture(const std::wstring& filename, const std::string& name);
     void LoadTextures();
-	void BuildAudio();
+		void BuildAudio();
     void BuildRootSignature();
     void BuildDescriptorHeaps();
     void BuildShadersAndInputLayout();
 		void BuildTerrainGeometry();
     void BuildGeometry();
-	void BuildEnemySpritesGeometry();
+		void BuildEnemySpritesGeometry();
     void BuildPSOs();
     void BuildFrameResources();
-	void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
+		void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
     void BuildMaterials();
-	std::unique_ptr<RenderItem> BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		std::unique_ptr<RenderItem> BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     void BuildRenderItems();
     void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
@@ -567,52 +567,32 @@ void Application::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-//void Application::LoadTexture(const std::wstring& filename, const std::string& name)
-//{
-//	auto tex = std::make_unique<Texture>();
-//	tex->Name = name;
-//	tex->Filename = filename;
-//	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-//		mCommandList.Get(), tex->Filename.c_str(),
-//		tex->Resource, tex->UploadHeap));
-//
-//	mTextures[tex->Name] = std::move(tex);
-//}
+void Application::LoadTexture(const std::wstring& filename, const std::string& name)
+{
+	//Use this texture as example
+	auto tex = std::make_unique<Texture>();
+	tex->Name = name;
+	tex->Filename = filename;
+	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+		mCommandList.Get(), tex->Filename.c_str(),
+		tex->Resource, tex->UploadHeap));
+
+	mTextures[tex->Name] = std::move(tex);
+}
 
 /// <summary>
 /// Loads texture files from directory
 /// </summary>
 void Application::LoadTextures()
 {
-	//Use this texture as example
-	auto defaultDiffuseTex = std::make_unique<Texture>();
-	defaultDiffuseTex->Name = "defaultDiffuseTex";
-	defaultDiffuseTex->Filename = L"Data/Textures/white1x1.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), defaultDiffuseTex->Filename.c_str(),
-		defaultDiffuseTex->Resource, defaultDiffuseTex->UploadHeap));
-
-	mTextures[defaultDiffuseTex->Name] = std::move(defaultDiffuseTex);
-
-
-	auto tempTex = std::make_unique<Texture>();
-	tempTex->Name = "tempTex";
-	tempTex->Filename = L"Data/Textures/Tentacle.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), tempTex->Filename.c_str(),
-		tempTex->Resource, tempTex->UploadHeap));
-
-	mTextures[tempTex->Name] = std::move(tempTex);
-
-
-
+	LoadTexture(L"Data/Textures/white1x1.dds", "tex");
+	LoadTexture(L"Data/Textures/Tentacle.dds", "tempTex");
+	LoadTexture(L"Data/Textures/obstacle.dds", "houseTex");
 }
 
 void Application::BuildAudio()
 {
 	mGameAudio.Init();
-	// set master volume
-	
 
 	// sfx channel
 	{
@@ -683,7 +663,7 @@ void Application::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 2;
+	srvHeapDesc.NumDescriptors = 3;
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -693,8 +673,9 @@ void Application::BuildDescriptorHeaps()
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
-	auto defaultDiffuseTex		= mTextures["defaultDiffuseTex"]->Resource;
+	auto defaultDiffuseTex		= mTextures["tex"]->Resource;
 	auto tempBillboardingTex	= mTextures["tempTex"]->Resource;
+	auto houseTex	= mTextures["houseTex"]->Resource;
 
 
 
@@ -707,11 +688,20 @@ void Application::BuildDescriptorHeaps()
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	md3dDevice->CreateShaderResourceView(defaultDiffuseTex.Get(), &srvDesc, hDescriptor);
 
+	// billboard tex
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-
 	srvDesc.Format = tempBillboardingTex->GetDesc().Format;
 	srvDesc.Texture2D.MipLevels = tempBillboardingTex->GetDesc().MipLevels;
 	md3dDevice->CreateShaderResourceView(tempBillboardingTex.Get(), &srvDesc, hDescriptor);
+
+	// house tex
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	srvDesc.Format = houseTex->GetDesc().Format;
+	srvDesc.Texture2D.MipLevels = houseTex->GetDesc().MipLevels;
+	md3dDevice->CreateShaderResourceView(houseTex.Get(), &srvDesc, hDescriptor);
+
+
+
 }
 
 void Application::BuildShadersAndInputLayout()
@@ -1057,12 +1047,7 @@ void Application::BuildMaterials()
 
 	// MATT TEXTURE STUFF
 	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
-
-	// todo: uncomment if the Material names are same as texture names
-	/*std::for_each(mTextures.begin(), mTextures.end(), [&](auto& p)
-		{
-			BuildMaterial(matIndex, matIndex, p.first);
-		});*/
+	BuildMaterial(2, "HouseMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
 }
 
@@ -1090,14 +1075,11 @@ std::unique_ptr<RenderItem> Application::BuildRenderItem(UINT& objCBindex, const
 /// </summary>
 void Application::BuildRenderItems()
 {
-
-	//float posX = 0.0f;	float scaleX = 1.0f;
-	//float posY = 1.0f;	float scaleY = 5.0f;
-	//float posZ = 0.0f;	float scaleZ = 1.0f;
-
+	// initial values for boss
 	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
 	DirectX::SimpleMath::Vector3 scale = { 10.0f,10.0f,10.0f };
-	position.y += 2.5f;
+	// slightly inset into ground
+	position.y += scale.y * 0.5f - 0.1f;
 	//Build render items here
 	UINT objectCBIndex = 0;
 
@@ -1148,7 +1130,7 @@ void Application::BuildRenderItems()
 			position.z = cos(2.0f*(float)i) * RandFloat(20.0f, 50.0f);
 			position = ApplyTerrainHeight(position, terrainParam);
 
-			auto obst = BuildRenderItem(objectCBIndex, gc::OBSTACLE_DATA[i].geoName, gc::OBSTACLE_DATA[i].subGeoName, "Red");
+			auto obst = BuildRenderItem(objectCBIndex, gc::OBSTACLE_DATA[i].geoName, gc::OBSTACLE_DATA[i].subGeoName, "HouseMat");
 
 			XMStoreFloat4x4(&obst->position, Matrix::CreateTranslation(position));
 			XMStoreFloat4x4(&obst->texTransform, Matrix::Identity);
