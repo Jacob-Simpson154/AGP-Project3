@@ -1,14 +1,15 @@
 #pragma once
-#include "RenderItemStruct.h"
+//#include "RenderItemStruct.h"
+#include "Enemy.h"
 
-class Boss
+class Boss : public Enemy
 {
 public: 
 	Boss();
 	~Boss();
 	void Setup(int s, int h, RenderItem* geo);
-	bool DealDamage(int d);
-	void UpdateMovement();
+	void Enemy::Movement();
+	/*void UpdateMovement();*/
 private:
 	int health = 100;
 	int stage;

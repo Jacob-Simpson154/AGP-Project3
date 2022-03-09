@@ -18,8 +18,7 @@ void Boss::Setup(int s, int h, RenderItem* geo)
 	geoObject = geo;
 }
 
-void Boss::UpdateMovement()
-{
+void Boss::Movement() {
 	float posX = 0.0f;	float scaleX = 1.0f;
 	float posY = 1.0f;	float scaleY = 5.0f;
 	float posZ = 0.0f;	float scaleZ = 1.0f;
@@ -30,11 +29,23 @@ void Boss::UpdateMovement()
 	tt += 0.01f;
 }
 
-bool Boss::DealDamage(int damage)
-{
-	health -= damage;
-	if (health <= 0)
-		return true;
-	else return false;
-}
+//void Boss::UpdateMovement()
+//{
+//	float posX = 0.0f;	float scaleX = 1.0f;
+//	float posY = 1.0f;	float scaleY = 5.0f;
+//	float posZ = 0.0f;	float scaleZ = 1.0f;
+//
+//
+//	XMStoreFloat4x4(&geoObject->position, XMMatrixTranslation(posX, posY + tt, posZ));
+//	geoObject->NumFramesDirty = gNumFrameResources;
+//	tt += 0.01f;
+//}
+
+//bool Enemy::DealDamage(int damage)
+//{
+//	health -= damage;
+//	if (health <= 0)
+//		return true;
+//	else return false;
+//}
 

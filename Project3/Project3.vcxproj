@@ -156,6 +156,7 @@
     <ClCompile Include="Common\GameTimer.cpp" />
     <ClCompile Include="Common\GeometryGenerator.cpp" />
     <ClCompile Include="Common\MathHelper.cpp" />
+    <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="Mob.cpp" />
     <ClCompile Include="ReadMe.cpp" />

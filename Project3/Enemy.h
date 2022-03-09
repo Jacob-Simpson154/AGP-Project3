@@ -1,4 +1,5 @@
 #pragma once
+#include "RenderItemStruct.h"
 
 class Enemy
 {
@@ -7,10 +8,11 @@ class Enemy
 		Enemy(int stage, int health);
 
 		~Enemy();
-		void DealDamage();
+		bool DealDamage(int damage);
 		virtual void Movement() = 0;
 
 	private:
 		int hp;
-		//RenderItem struct //For keeping track of Geometry Object
+		RenderItem* geoObject;
+		float tt = 0;
 };

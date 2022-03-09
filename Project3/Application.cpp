@@ -446,7 +446,7 @@ void Application::AnimateMaterials(const GameTimer& gt)
 
 void Application::UpdateMovement()
 {
-	bossStats.UpdateMovement();
+	bossStats.Movement();
 }
 
 void Application::UpdateObjectCBs(const GameTimer& gt)
