@@ -1,177 +1,14 @@
-#include "Common/d3dApp.h"
-#include "Common/MathHelper.h"
-#include "Common/UploadBuffer.h"
-#include "Common/GeometryGenerator.h"
-#include "Common/Camera.h"
-#include "FrameResource.h"
-#include "AudioSystem.h"
-#include "Weapon.h"
-#include "Boss.h"
+#include "Application.h"
 #include "OBJ_Loader.h"
-#include "Terrain.h"
 #include "Util.h"
-#include "AmmoBox.h"
-
-#include "Constants.h"
 
 #define TERRAIN 1
 #define OBSTACLE_TOGGLE 1
 
-using Microsoft::WRL::ComPtr;
-using namespace DirectX;
-using namespace DirectX::PackedVector;
+const int gNumFrameResources = 3;
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "D3D12.lib")
-
-const int gNumFrameResources = 3;
-
-typedef DirectX::SimpleMath::Vector2 Vector2;
-typedef DirectX::SimpleMath::Vector3 Vector3;
-
-typedef DirectX::SimpleMath::Matrix Matrix;
-
-struct RenderItem
-{
-	RenderItem() = default;
-	RenderItem(const RenderItem & rhs) = delete;
-	
-	/// <summary>
-	/// Controls visibility
-	/// </summary>
-	bool shouldRender = true;
-	/// <summary>
-	/// This items material
-	/// </summary>
-	Material* material = nullptr;
-	/// <summary>
-	/// This items geometry
-	/// </summary>
-	MeshGeometry* geometry = nullptr;
-	/// <summary>
-	/// Objects index, should increment 
-	/// per render item
-	/// </summary>
-	UINT objectCBIndex = -1;
-	/// <summary>
-	/// Position in world
-	/// </summary>
-	XMFLOAT4X4 position = MathHelper::Identity4x4();
-	XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
-
-	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
-	// Because we have an object cbuffer for each FrameResource, we have to apply the
-	// update to each FrameResource.  Thus, when we modify obect data we should set 
-	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
-	int NumFramesDirty = gNumFrameResources;
-	// Primitive topology.
-	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	// DrawIndexedInstanced parameters.
-	UINT IndexCount = 0;
-	UINT StartIndexLocation = 0;
-	int BaseVertexLocation = 0;
-};
-enum class RenderLayer : int
-{
-	World = 0,
-	Enemy,
-	AmmoBox,
-	Count
-};
-
-class Application : public D3DApp
-{
-public:
-    Application(HINSTANCE hInstance);
-    Application(const Application& rhs) = delete;
-    Application& operator=(const Application& rhs) = delete;
-    ~Application();
-
-    virtual bool Initialize()override;
-
-private:
-    virtual void OnResize()override;
-    virtual void Update(const GameTimer& gt)override;
-    virtual void Draw(const GameTimer& gt)override;
-
-    virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
-    virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
-    virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
-
-    void OnKeyboardInput(const GameTimer& gt);
-    void AnimateMaterials(const GameTimer& gt);
-    void UpdateObjectCBs(const GameTimer& gt);
-    void UpdateMaterialBuffer(const GameTimer& gt);
-    void UpdateMainPassCB(const GameTimer& gt);
-		void LoadTexture(const std::wstring& filename, const std::string& name);
-    void LoadTextures();
-		void BuildAudio();
-
-		void CreateSRV(const std::string& texName, CD3DX12_CPU_DESCRIPTOR_HANDLE& hdesc, D3D12_SRV_DIMENSION dim = D3D12_SRV_DIMENSION_TEXTURE2D);
-    void BuildRootSignature();
-    void BuildDescriptorHeaps();
-    void BuildShadersAndInputLayout();
-		void BuildTerrainGeometry();
-    void BuildGeometry();
-		void BuildEnemySpritesGeometry();
-    void BuildPSOs();
-    void BuildFrameResources();
-		void BuildMaterial(int texIndex, const std::string& name, float roughness = 0.5f, const DirectX::XMFLOAT4& diffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f }, const DirectX::XMFLOAT3& fresnel = { 0.05f, 0.05f, 0.05f });
-    void BuildMaterials();
-		std::unique_ptr<RenderItem> BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    void BuildRenderItems();
-    void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
-	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
-	void Shoot();
-	void CheckCameraCollision();
-    std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
-
-private:
-
-    std::vector<std::unique_ptr<FrameResource>> mFrameResources;
-    FrameResource* mCurrFrameResource = nullptr;
-    int mCurrFrameResourceIndex = 0;
-
-    UINT mCbvSrvDescriptorSize = 0;
-
-    ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
-
-    ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
-
-    std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
-    std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
-    std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
-    std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
-    std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSOs;
-
-    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-	
-		PassConstants mMainPassCB;
-
-    Camera mCamera;
-
-    POINT mLastMousePos;
-
-	bool fpsReady = false;
-
-	int matIndex = 0;
-	//all existing items
-	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
-
-	AudioSystem mGameAudio;
-
-	BoundingBox bossBox;
-	BoundingBox ammoBox[4];
-	BoundingBox obstBox[gc::NUM_OBSTACLE];
-	AmmoBox ammoBoxClass[4];
-	BoundingBox cameraBox;
-
-	Boss bossStats;
-	Weapon currentGun;
-	TerrainParams terrainParam;
-	float mAudioVolume = 0.3f;
-};
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
@@ -294,6 +131,7 @@ void Application::Update(const GameTimer& gt)
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
+	ui.Update(this, mTimer.DeltaTime());
 
 	int ammoIndex = 0;
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
@@ -358,15 +196,15 @@ void Application::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
 
-
 	mCommandList->OMSetStencilRef(0);
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
+	spriteSys.Draw(mCommandList.Get(), mScreenViewport, ui);
 	
-
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
 		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+
 
 	// Done recording commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -680,7 +518,7 @@ void Application::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 4;
+	srvHeapDesc.NumDescriptors = 5; // includes font sprites
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -689,17 +527,33 @@ void Application::BuildDescriptorHeaps()
 	// Fill out the heap with actual descriptors.
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()); // for fontsprites
 
-
+	// todo put texture strings into constants.h and iterate through. Dont use for(auto&...) as unordered.
 	CreateSRV("tex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("tempTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("houseTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("terrainTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
+	// loads fontsprite
+	spriteSys.Initialise(this, 
+		md3dDevice.Get(), 
+		mCommandQueue.Get(), 
+		mCbvSrvDescriptorSize, 
+		mBackBufferFormat, 
+		mDepthStencilFormat, 
+		hDescriptor, 
+		hGpuDescriptor);
 
+	ui.Initialise(this);
 }
 
 void Application::BuildShadersAndInputLayout()
@@ -1185,6 +1039,7 @@ void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}
+
 }
 
 // loads obj objects into mGeometries
@@ -1342,7 +1197,6 @@ void Application::CheckCameraCollision()
 			currentGun.AddAmmo(ammoBoxClass[counter].Consume());
 		}
 	}
-
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Application::GetStaticSamplers()
@@ -1400,5 +1254,35 @@ std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Application::GetStaticSamplers(
 		pointWrap, pointClamp,
 		linearWrap, linearClamp,
 		anisotropicWrap, anisotropicClamp };
+}
+
+CD3DX12_GPU_DESCRIPTOR_HANDLE Application::GetSpriteGpuDescHandle(const std::string& textureName)
+{
+	// get gpu start
+	CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
+
+	//find offset distance
+	const int distance = (int)std::distance(mTextures.begin(), mTextures.find(textureName));
+
+	//offset desc
+	hGpuDescriptor.Offset(distance, mCbvSrvUavDescriptorSize);
+
+	return hGpuDescriptor;
+}
+
+float Application::GetGameTime() const
+{
+	return mTimer.TotalTime();
+}
+
+const UINT Application::GetCbvSrvDescriptorSize() const
+{
+	return mCbvSrvDescriptorSize;
+}
+
+RenderItem::RenderItem()
+	:
+	NumFramesDirty(gNumFrameResources)
+{
 }
 
