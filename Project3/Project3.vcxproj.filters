@@ -116,6 +116,9 @@
     <ClInclude Include="RenderItemStruct.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Mob.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\Default.hlsl">

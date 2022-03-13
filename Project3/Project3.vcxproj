@@ -177,6 +177,7 @@
     <ClInclude Include="Common\UploadBuffer.h" />
     <ClInclude Include="Enemy.h" />
     <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="Mob.h" />
     <ClInclude Include="RenderItemStruct.h" />
     <ClInclude Include="Weapon.h" />
   </ItemGroup>
