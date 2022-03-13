@@ -1,4 +1,4 @@
-#include "Common/d3dApp.h"
+﻿#include "Common/d3dApp.h"
 #include "Common/MathHelper.h"
 #include "Common/UploadBuffer.h"
 #include "Common/GeometryGenerator.h"
@@ -132,8 +132,8 @@ private:
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	
-		PassConstants mMainPassCB;
-		Camera cam;
+	PassConstants mMainPassCB;
+	Camera cam;
     Camera *mCamera = &cam;
 
     POINT mLastMousePos;
@@ -145,14 +145,13 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 
-	std::vector<std::unique_ptr<RenderItem>> mAllEnemies;
-	std::vector<std::unique_ptr<RenderItem>> mMiscObj;
+	std::vector<std::unique_ptr<RenderItem>> mAllEnemies;//神 - Made these to hold all enemies
+	std::vector<std::unique_ptr<RenderItem>> mMiscObj;//神 - Made these to hold things like the floor and ammo boxes
 
 	AudioSystem mGameAudio;
 
 	BoundingBox bossBox;
 	BoundingBox mobBox[4];
-
 	BoundingBox ammoBox[4];
 	BoundingBox cameraBox;
 
@@ -210,29 +209,23 @@ bool Application::Initialize()
 	// so we have to query this information.
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	
-
-	mCamera->LookAt(
-		XMFLOAT3(5.0f, 4.0f, -15.0f),
-		XMFLOAT3(0.0f, 1.0f, 0.0f),
-		XMFLOAT3(0.0f, 1.0f, 0.0f));
-
-	currentGun.Setup("Pistol", 25, 7);
-	 
 	BuildAudio();
 	LoadTextures();
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
 	BuildGeometry();
-
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSOs();
-	bossStats.Setup(mAllRitems.at(5).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry
-	//mobStats.Setup(0, 100, mAllRitems.at(6).get());
 
+	mCamera->LookAt(
+		XMFLOAT3(5.0f, 4.0f, -15.0f),
+		XMFLOAT3(0.0f, 1.0f, 0.0f),
+		XMFLOAT3(0.0f, 1.0f, 0.0f));
+	currentGun.Setup("Pistol", 25, 7);
+	bossStats.Setup(mAllRitems.at(5).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry
 	for (size_t i = 0; i < 4; i++)
 	{
 		Mob m = Mob();
@@ -242,7 +235,6 @@ bool Application::Initialize()
 
 
 	cameraBox = BoundingBox(mCamera->GetPosition3f(), XMFLOAT3(1, 1, 1));
-
 
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -265,6 +257,7 @@ void Application::OnResize()
 void Application::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
+	//SetCursorPos(mClientWidth / 2, mClientHeight / 2); 神 - Playing around this to try and make the cursor fixed to the screen
 
 	// Cycle through the circular frame resource array.
 	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
@@ -461,8 +454,7 @@ void Application::AnimateMaterials(const GameTimer& gt)
 void Application::UpdateMovement()
 {
 	bossStats.Movement();
-	mobs.at(0).Movement();
-	//mobStats.Movement();
+	for (size_t i = 0; i < mobs.size(); i++) mobs.at(i).Movement();
 }
 
 void Application::UpdateObjectCBs(const GameTimer& gt)

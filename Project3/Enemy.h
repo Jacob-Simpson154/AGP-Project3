@@ -17,6 +17,7 @@ class Enemy
 		Enemy();
 		~Enemy();
 		bool DealDamage(int damage);
+		void FollowTarget(XMFLOAT3 targetPos);
 		/*void Setup(int stage, int health, RenderItem* geo);*/
 		virtual void Movement() = 0;
 
