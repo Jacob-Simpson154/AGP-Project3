@@ -131,7 +131,6 @@ void Application::Update(const GameTimer& gt)
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
-	ui.Update(this, mTimer.DeltaTime());
 
 	int ammoIndex = 0;
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
@@ -199,7 +198,7 @@ void Application::Draw(const GameTimer& gt)
 	mCommandList->OMSetStencilRef(0);
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
-	spriteSys.Draw(mCommandList.Get(), mScreenViewport, ui);
+
 	
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -440,16 +439,29 @@ void Application::BuildAudio()
 		mGameAudio.CreateChannel("sfx", AUDIO_CHANNEL_TYPE::SFX);
 		mGameAudio.SetCacheSize("sfx", 30u);
 		mGameAudio.ForceAudio("sfx", true);
-		mGameAudio.LoadSound("sfx", "explosion", L"Data/Audio/386862__prof-mudkip__8-bit-explosion.wav");
-		mGameAudio.LoadSound("sfx", "hit", L"Data/Audio/398957__prof-mudkip__hit-hurt.wav");
+
+		mGameAudio.LoadSound("sfx", "BossDead", L"Data/Audio/BossDead.wav");
+		mGameAudio.LoadSound("sfx", "BossRoar", L"Data/Audio/BossRoar.wav");
+		mGameAudio.LoadSound("sfx", "BossShoot", L"Data/Audio/BossShoot.wav");
+		mGameAudio.LoadSound("sfx", "BossTakeDamage", L"Data/Audio/BossTakeDamage.wav");
+		mGameAudio.LoadSound("sfx", "EnemyDead", L"Data/Audio/EnemyDead.wav");
+		mGameAudio.LoadSound("sfx", "EnemyTakeDamage", L"Data/Audio/EnemyTakeDamage.wav");
+		mGameAudio.LoadSound("sfx", "Pickup", L"Data/Audio/Pickup.wav");
+		mGameAudio.LoadSound("sfx", "PickupHealth", L"Data/Audio/PickupHealth.wav");
+		mGameAudio.LoadSound("sfx", "PlayerDead", L"Data/Audio/PlayerDead.wav");
+		mGameAudio.LoadSound("sfx", "PlayerFootstep", L"Data/Audio/PlayerFootstep.wav");
+		mGameAudio.LoadSound("sfx", "PlayerShoot", L"Data/Audio/PlayerShoot.wav");
+		mGameAudio.LoadSound("sfx", "PlayerTakeDamage", L"Data/Audio/PlayerTakeDamage.wav");
+		mGameAudio.LoadSound("sfx", "PlayerWeaponSlash", L"Data/Audio/PlayerWeaponSlash.wav");
+		mGameAudio.LoadSound("sfx", "TimeUp", L"Data/Audio/TimeUp.wav");
 		mGameAudio.SetChannelVolume("sfx", mAudioVolume);
-		mGameAudio.Play("hit");
+		mGameAudio.Play("PlayerTakeDamage",nullptr,false, mAudioVolume,RandomPitchValue());
 	}
 	// music channel
 	{
 		mGameAudio.CreateChannel("music", AUDIO_CHANNEL_TYPE::MUSIC);
 		mGameAudio.SetFade("music", 3.0f);
-		mGameAudio.SetChannelVolume("music", mAudioVolume);
+		mGameAudio.SetChannelVolume("music", mAudioVolume*0.2f);
 		mGameAudio.LoadSound("music", "heroMusic", L"Data/Audio/615342__josefpres__8-bit-game-music-001-simple-mix-01-short-loop-120-bpm.wav");
 		mGameAudio.LoadSound("music", "evilMusic", L"Data/Audio/545218__victor-natas__evil-music.wav");
 		mGameAudio.Play("heroMusic");
@@ -527,33 +539,17 @@ void Application::BuildDescriptorHeaps()
 	// Fill out the heap with actual descriptors.
 	//
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mSrvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	CD3DX12_GPU_DESCRIPTOR_HANDLE hGpuDescriptor(mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart()); // for fontsprites
 
 	// todo put texture strings into constants.h and iterate through. Dont use for(auto&...) as unordered.
 	CreateSRV("tex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("tempTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("houseTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("terrainTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-	hGpuDescriptor.Offset(1, mCbvSrvDescriptorSize);
 
-	// loads fontsprite
-	spriteSys.Initialise(this, 
-		md3dDevice.Get(), 
-		mCommandQueue.Get(), 
-		mCbvSrvDescriptorSize, 
-		mBackBufferFormat, 
-		mDepthStencilFormat, 
-		hDescriptor, 
-		hGpuDescriptor);
-
-	ui.Initialise(this);
 }
 
 void Application::BuildShadersAndInputLayout()

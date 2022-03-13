@@ -169,6 +169,6 @@ private:
 	Weapon currentGun;
 	TerrainParams terrainParam;
 	float mAudioVolume = 0.3f;
-	SpriteSystem spriteSys;
-	UI ui;
+	//SpriteSystem spriteSys;
+	//UI ui;
 };
