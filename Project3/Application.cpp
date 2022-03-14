@@ -1160,6 +1160,8 @@ void Application::Shoot()
 {
 	if (currentGun.CanShoot())
 	{
+		mGameAudio.Play("PlayerShoot", nullptr, false, mAudioVolume, RandomPitchValue());
+
 		currentGun.Shoot();
 
 		XMFLOAT4X4 P = mCamera.GetProj4x4f();
@@ -1193,6 +1195,8 @@ void Application::Shoot()
 			float tmin = 0.0f;
 			if (bossBox.Intersects(rayOrigin, rayDir, tmin))
 			{
+				mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
+
 				bool isDead = bossStats.DealDamage(currentGun.GetDamage());
 				if (isDead == true)
 				{
@@ -1219,6 +1223,8 @@ void Application::CheckCameraCollision()
 
 		if(ammoBox[counter].Contains(mCamera.GetPosition()))
 		{
+			mGameAudio.Play("Pickup", nullptr, false, mAudioVolume, RandomPitchValue());
+
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
 			currentGun.AddAmmo(ammoBoxClass[counter].Consume());
@@ -1236,6 +1242,8 @@ void Application::CheckCameraCollision()
 
 		if (healthBox[counter].Contains(mCamera.GetPosition()))
 		{
+			mGameAudio.Play("PickupHealth", nullptr, false, mAudioVolume, RandomPitchValue());
+
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
 			//Heal - feed the below get to a health class
