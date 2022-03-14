@@ -65,10 +65,12 @@ bool Application::Initialize()
 
 	bossStats.Setup(0, 100);
 	currentGun.Setup("Pistol", 25, 7);
-	ammoBoxClass[0] = AmmoBox(20);
-	ammoBoxClass[1] = AmmoBox(30);
-	ammoBoxClass[2] = AmmoBox(40);
-	ammoBoxClass[3] = AmmoBox(50);
+	for (int i = 0; i < 4; i++)
+	{
+		ammoBoxClass[i] = AmmoBox(10 * i);
+		healthBoxClass[i] = HealthBox(10 * i);
+	}
+
 
 
 	BuildAudio();
@@ -132,16 +134,27 @@ void Application::Update(const GameTimer& gt)
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
 
-	int ammoIndex = 0;
+	int checkIndex = 0;
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
 	{
-		ammoBoxClass[ammoIndex].Update(gt.DeltaTime());
-		if (ammoBoxClass[ammoIndex].hasBeenConsumed == false)
+		ammoBoxClass[checkIndex].Update(gt.DeltaTime());
+		if (ammoBoxClass[checkIndex].hasBeenConsumed == false)
 		{
 			ri->shouldRender = true;
 		}
 		
-		ammoIndex++;
+		checkIndex++;
+	}
+	checkIndex = 0;
+	for (auto ri : mRitemLayer[(int)RenderLayer::HealthBox])
+	{
+		healthBoxClass[checkIndex].Update(gt.DeltaTime());
+		if (healthBoxClass[checkIndex].hasBeenConsumed == false)
+		{
+			ri->shouldRender = true;
+		}
+
+		checkIndex++;
 	}
 }
 
@@ -194,6 +207,7 @@ void Application::Draw(const GameTimer& gt)
 
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::HealthBox]);
 
 	mCommandList->OMSetStencilRef(0);
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
@@ -576,7 +590,7 @@ void Application::BuildShadersAndInputLayout()
 void Application::BuildTerrainGeometry()
 {
 	GeometryGenerator geoGen;
-	srand(time(0));
+	//srand(time(0));
 
 	const DirectX::SimpleMath::Vector2 terrainRes(200.0f);
 	
@@ -943,7 +957,7 @@ void Application::BuildRenderItems()
 	// boss
 	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Tentacle");
 	// boss transformations
-	XMStoreFloat4x4(&boss->position, Matrix::CreateScale(scale) * Matrix::CreateTranslation(position));
+	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	bossBox = BoundingBox(position, scale);
 
@@ -962,10 +976,26 @@ void Application::BuildRenderItems()
 			position.y += 0.8f;
 
 			auto ammoCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
-			XMStoreFloat4x4(&ammoCrate->position, Matrix::CreateScale(scale) * Matrix::CreateTranslation(position));
+			XMStoreFloat4x4(&ammoCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			ammoBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate.get());
 			mAllRitems.push_back(std::move(ammoCrate));
+		}
+		
+		for (size_t i = 0; i < 4; i++)
+		{
+			position.x = sin((float)i) * RandFloat(10.0f,20.0f);
+			position.z = cos((float)i) * RandFloat(10.0f,20.0f);
+
+			// slight inset into terrain
+			position = ApplyTerrainHeight(position, terrainParam);
+			position.y += 0.8f;
+
+			auto healthCrate= BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+			XMStoreFloat4x4(&healthCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
+			healthBox[i] = BoundingBox(position, scale);
+			mRitemLayer[(int)RenderLayer::HealthBox].emplace_back(healthCrate.get());
+			mAllRitems.push_back(std::move(healthCrate));
 		}
 	}
 
@@ -1195,6 +1225,23 @@ void Application::CheckCameraCollision()
 		}
 	}
 
+	counter = -1;
+	for (auto ri : mRitemLayer[(int)RenderLayer::HealthBox])
+	{
+		counter++;
+
+		auto geo = ri->geometry;
+		if (ri->shouldRender == false)
+			continue;
+
+		if (healthBox[counter].Contains(mCamera.GetPosition()))
+		{
+			ri->shouldRender = false;
+			ri->NumFramesDirty = gNumFrameResources;
+			//Heal - feed the below get to a health class
+			healthBoxClass[counter].Consume();
+		}
+	}
 
 }
 

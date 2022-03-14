@@ -13,7 +13,7 @@
 #include "AmmoBox.h"
 #include "Constants.h"
 #include "SpriteSystem.h" // screenspace sprites and text
-
+#include "HealthBox.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -69,6 +69,7 @@ enum class RenderLayer : int
 	World = 0,
 	Enemy,
 	AmmoBox,
+	HealthBox,
 	Count
 };
 
@@ -161,8 +162,10 @@ private:
 
 	BoundingBox bossBox;
 	BoundingBox ammoBox[4];
+	BoundingBox healthBox[4];
 	BoundingBox obstBox[gc::NUM_OBSTACLE];
 	AmmoBox ammoBoxClass[4];
+	HealthBox healthBoxClass[4];
 	BoundingBox cameraBox;
 
 	Boss bossStats;

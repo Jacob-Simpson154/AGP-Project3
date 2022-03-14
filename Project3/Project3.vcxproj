@@ -158,6 +158,7 @@
     <ClCompile Include="Common\GeometryGenerator.cpp" />
     <ClCompile Include="Common\MathHelper.cpp" />
     <ClCompile Include="FrameResource.cpp" />
+    <ClCompile Include="HealthBox.cpp" />
     <ClCompile Include="ReadMe.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="Terrain.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="Common\UploadBuffer.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="HealthBox.h" />
     <ClInclude Include="SpriteSystem.h" />
     <ClInclude Include="TimerInterval.h" />
     <ClInclude Include="Terrain.h" />
