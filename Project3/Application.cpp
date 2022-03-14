@@ -242,6 +242,8 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 		mLastMousePos.x = x;
 		mLastMousePos.y = y;
 
+		mGameAudio.Play("evilMusic");
+
 		SetCapture(mhMainWnd);
 
 		fpsReady = true;
@@ -288,7 +290,6 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 	if (GetAsyncKeyState('S') & 0x8000)
 	{
 		mCamera.Walk(-10.0f * dt);
-		mGameAudio.Play("evilMusic");
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
@@ -1193,6 +1194,8 @@ void Application::CheckCameraCollision()
 			currentGun.AddAmmo(ammoBoxClass[counter].Consume());
 		}
 	}
+
+
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Application::GetStaticSamplers()
