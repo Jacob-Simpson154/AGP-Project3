@@ -124,6 +124,10 @@ public:
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSpriteGpuDescHandle(const std::string& textureName);
 	const UINT GetCbvSrvDescriptorSize() const;
 	float GetGameTime() const;
+	std::vector<std::unique_ptr<RenderItem>>* GetAllRItems()
+	{
+		return &mAllRitems;
+	}
 
 private:
 
@@ -169,6 +173,7 @@ private:
 	Boss bossStats;
 	Weapon currentGun;
 	TerrainParams terrainParam;
+	UICharLine pointsDisplay;
 	float mAudioVolume = 0.3f;
 	//SpriteSystem spriteSys;
 	//UI ui;

@@ -15,6 +15,43 @@
 
 class Application;
 
+
+struct UICharLine
+{
+
+	// offset in renderitem vector
+	uint32_t ritemStart = 0;
+	// number of chars in array
+	uint32_t len = 0;
+	void Init(Application* const app, uint32_t ritemOffset, uint32_t length, const DirectX::SimpleMath::Vector3 pos, int decimalSymbol = 11, int postfixSymbol = 12, int decimalPlace = 2);
+	void Update(Application* const app, float dt, float dislpayValue);
+	// char index
+	int decimalSymbol;
+	// char index
+	int postfixSymbol;
+	int decimalPlace;
+
+	uint32_t decimalIndex;
+	uint32_t postfixIndex;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// depricated
 struct Text
 {
 	std::string string = "";
@@ -30,7 +67,7 @@ struct Text
 	Text() = default;
 	Text(const Text&) = default;
 };
-
+// depricated
 struct Sprite
 {
 	std::string textureName; //lookup gpu handle
@@ -55,6 +92,7 @@ struct Sprite
 
 
 // container for text and sprites
+// depricated
 struct UI
 {
 	// index for text/spr containers
@@ -74,6 +112,7 @@ struct UI
 };
 
 // manages rendering of screen space sprites and text 
+// depricated
 class SpriteSystem
 {
 private:

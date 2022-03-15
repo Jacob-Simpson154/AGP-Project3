@@ -88,6 +88,8 @@ bool Application::Initialize()
 	BuildFrameResources();
 	BuildPSOs();
 
+
+
 	cameraBox = BoundingBox(mCamera.GetPosition3f(), XMFLOAT3(1, 1, 1));
 
 
@@ -126,6 +128,8 @@ void Application::Update(const GameTimer& gt)
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
 	}
+
+	pointsDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
 
 	mGameAudio.Update(mTimer.DeltaTime(), mCamera.GetPosition3f(), mCamera.GetLook3f(), mCamera.GetUp3f());
 
@@ -327,6 +331,7 @@ void Application::UpdateObjectCBs(const GameTimer& gt)
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
 	for (auto& e : mAllRitems)
 	{
+
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
 		if (e->NumFramesDirty > 0)
@@ -1056,7 +1061,9 @@ void Application::BuildRenderItems()
 		mAllRitems.push_back(std::move(ui));
 	}
 
+
 	{
+		uint32_t firstLineStart = mAllRitems.size();
 		// todo create more
 		for (size_t i = 0; i < gc::UI_NUM_RITEM_CHAR; i++)
 		{
@@ -1067,7 +1074,7 @@ void Application::BuildRenderItems()
 			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
 
 			Vector3 tempUVW = Vector2::Zero;
-			tempUVW.y += gc::UI_CHAR_INC * (float)i;
+			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
 
 			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
 			XMStoreFloat4x4(&uiChar->position,  Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
@@ -1076,7 +1083,9 @@ void Application::BuildRenderItems()
 			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiChar.get());
 			mAllRitems.push_back(std::move(uiChar));
 		}
-
+		
+		pointsDisplay.Init(this, firstLineStart, 10,Vector3::Zero, 11, 12, 2);
+		
 	}
 	{
 		for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
@@ -1098,6 +1107,8 @@ void Application::BuildRenderItems()
 			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiWord.get());
 			mAllRitems.push_back(std::move(uiWord));
 		}
+
+
 
 	}
 
