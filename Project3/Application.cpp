@@ -434,6 +434,7 @@ void Application::LoadTextures()
 	LoadTexture(L"Data/Textures/Tentacle.dds", "tempTex");
 	LoadTexture(L"Data/Textures/obstacle.dds", "houseTex");
 	LoadTexture(L"Data/Textures/terrain.dds", "terrainTex");
+	LoadTexture(L"Data/Textures/ui.dds", "uiTex");
 }
 
 void Application::BuildAudio()
@@ -555,7 +556,8 @@ void Application::BuildDescriptorHeaps()
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("terrainTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-
+	CreateSRV("uiTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 }
 
 void Application::BuildShadersAndInputLayout()
@@ -722,7 +724,17 @@ void Application::BuildGeometry()
 #endif //OBSTACLE_TOGGLE
 	;
 #if UI_SPRITE_TOGGLE
-	BuildObjGeometry("Data/Models/ui0.obj", "ui0Geo", "ui0");
+
+	BuildObjGeometry(gc::UI_CHAR.filename, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName);
+	BuildObjGeometry(gc::UI_WORD.filename, gc::UI_WORD.geoName, gc::UI_WORD.subGeoName);
+
+
+	for (auto& s : gc::UI_SPRITE_DATA)
+	{
+		BuildObjGeometry(s.filename, s.geoName, s.subGeoName);
+	}
+
+
 #endif //UI_SPRITE_TOGGLE
 }
 
@@ -937,6 +949,7 @@ void Application::BuildMaterials()
 	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
 	BuildMaterial(2, "HouseMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	BuildMaterial(3, "TerrainMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(4, "uiMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
 }
 
@@ -1032,9 +1045,64 @@ void Application::BuildRenderItems()
 
 	
 #if UI_SPRITE_TOGGLE	
-	auto ui = BuildRenderItem(objectCBIndex, "ui0Geo", "ui0", "Tentacle");
-	mRitemLayer[(int)RenderLayer::UI].emplace_back(ui.get());
-	mAllRitems.push_back(std::move(ui));
+
+
+	// todo change material
+	for(auto& s : gc::UI_SPRITE_DATA)
+	{
+		auto ui = BuildRenderItem(objectCBIndex, s.geoName,s.subGeoName, "uiMat");
+		XMStoreFloat4x4(&ui->position, Matrix::CreateTranslation(s.position));
+		mRitemLayer[(int)RenderLayer::UI].emplace_back(ui.get());
+		mAllRitems.push_back(std::move(ui));
+	}
+
+	{
+		// todo create more
+		for (size_t i = 0; i < gc::UI_NUM_RITEM_CHAR; i++)
+		{
+			// todo define init char pos in constants.h
+			// todo creates pointers to char ritem 
+			// todo update char uv to show value of vars
+			Vector3 tempPos = Vector3::Zero;
+			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			tempUVW.y += gc::UI_CHAR_INC * (float)i;
+
+			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
+			XMStoreFloat4x4(&uiChar->position,  Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
+			XMStoreFloat4x4(&uiChar->texTransform,  Matrix::CreateTranslation( tempUVW));
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiChar.get());
+			mAllRitems.push_back(std::move(uiChar));
+		}
+
+	}
+	{
+		for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
+		{
+
+			// todo define init word pos in constants.h
+			// todo creates pointers to word ritem 
+			
+			Vector3 tempPos = Vector3::Zero;
+			tempPos.y += 0.06f * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			tempUVW.y += gc::UI_WORD_INC * (float)i;
+
+			auto uiWord = BuildRenderItem(objectCBIndex, gc::UI_WORD.geoName, gc::UI_WORD.subGeoName, "uiMat");
+			XMStoreFloat4x4(&uiWord->position, Matrix::CreateTranslation(gc::UI_WORD.position + tempPos));
+			XMStoreFloat4x4(&uiWord->texTransform, Matrix::CreateTranslation(tempUVW));
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiWord.get());
+			mAllRitems.push_back(std::move(uiWord));
+		}
+
+	}
+
+
+
 #endif //UI_SPRITE_TOGGLE
 
 	// render items to layer

@@ -108,7 +108,12 @@ VertexOut VS(VertexIn vin)
 	
     // Transform to world space.
     float4 posW = float4(vin.PosL, 1.0f);
+    
+    posW = mul(posW, gWorld);
+    
+    // todo appropriately scale to screen
     //posW = mul(posW, gProj);
+    //m = mul(gProj, m);
     
     vout.PosW =   posW.xyz;
     
@@ -121,8 +126,6 @@ VertexOut VS(VertexIn vin)
         0.0f, 0.0f, 0.0f, 1.0f
     };
     
-    // todo appropriately scale to screen
-    //m = mul(gProj, m);
     
     // Transform to homogeneous clip space.
     vout.PosH = mul(posW, m);
