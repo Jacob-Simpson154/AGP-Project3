@@ -69,6 +69,7 @@ enum class RenderLayer : int
 	World = 0,
 	Enemy,
 	AmmoBox,
+	UI,
 	Count
 };
 
@@ -143,7 +144,7 @@ private:
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSOs;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-
+	std::vector< D3D12_INPUT_ELEMENT_DESC> mInputLayoutUi;
 	PassConstants mMainPassCB;
 
 	Camera mCamera;

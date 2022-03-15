@@ -1,6 +1,5 @@
 //How to load geometry from file
-// Go to Application::Initialize()
-//  Below BuildShadersAndInputLayout();
+// Go to App::BuildGeometry
 // 
 //  BuildObjGeometry("Data/Models/weapon.obj", "weaponGeo", "tempSword");
 //  BuildObjGeometry("Data/Models/floor.obj","floorGeo", "floor" );

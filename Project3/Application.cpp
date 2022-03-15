@@ -4,7 +4,7 @@
 
 #define TERRAIN 1
 #define OBSTACLE_TOGGLE 1
-
+#define UI_SPRITE_TOGGLE 1
 const int gNumFrameResources = 3;
 
 #pragma comment(lib, "d3dcompiler.lib")
@@ -44,6 +44,11 @@ Application::~Application()
 		FlushCommandQueue();
 }
 
+void DebugMsg(const std::wstring& wstr)
+{
+	OutputDebugString(wstr.c_str());
+}
+
 bool Application::Initialize()
 {
 	if (!D3DApp::Initialize())
@@ -56,8 +61,6 @@ bool Application::Initialize()
 	// so we have to query this information.
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	
-
 	mCamera.LookAt(
 		XMFLOAT3(5.0f, 4.0f, -15.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f),
@@ -69,7 +72,6 @@ bool Application::Initialize()
 	ammoBoxClass[1] = AmmoBox(30);
 	ammoBoxClass[2] = AmmoBox(40);
 	ammoBoxClass[3] = AmmoBox(50);
-
 
 	BuildAudio();
 	LoadTextures();
@@ -198,7 +200,8 @@ void Application::Draw(const GameTimer& gt)
 	mCommandList->OMSetStencilRef(0);
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
-
+	mCommandList->SetPipelineState(mPSOs["ui"].Get());
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::UI]);
 	
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -571,6 +574,19 @@ void Application::BuildShadersAndInputLayout()
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
+
+#if UI_SPRITE_TOGGLE
+	mShaders["UIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["UIPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "PS", "ps_5_1");
+
+	mInputLayoutUi =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
+#endif //UI_SPRITE_TOGGLE
+
 }
 
 void Application::BuildTerrainGeometry()
@@ -702,7 +718,10 @@ void Application::BuildGeometry()
 		BuildObjGeometry(gc::OBSTACLE_DATA[i].filename, gc::OBSTACLE_DATA[i].geoName, gc::OBSTACLE_DATA[i].subGeoName);
 	}
 #endif //OBSTACLE_TOGGLE
-
+	;
+#if UI_SPRITE_TOGGLE
+	BuildObjGeometry("Data/Models/ui0.obj", "ui0Geo", "ui0");
+#endif //UI_SPRITE_TOGGLE
 }
 
 void Application::BuildEnemySpritesGeometry()
@@ -829,8 +848,6 @@ void Application::BuildPSOs()
 	highlightPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&highlightPsoDesc, IID_PPV_ARGS(&mPSOs["highlight"])));
 
-
-
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPSODesc = opaquePsoDesc;
 	alphaTestedPSODesc.PS = {
 		reinterpret_cast<BYTE*>(mShaders["alphaTestedPS"]->GetBufferPointer()), 
@@ -838,6 +855,19 @@ void Application::BuildPSOs()
 	};
 	alphaTestedPSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestedPSODesc, IID_PPV_ARGS(&mPSOs["alphaTested"])));
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC uiPSODesc = alphaTestedPSODesc;
+	uiPSODesc.VS = {
+		reinterpret_cast<BYTE*>(mShaders["UIVS"]->GetBufferPointer()),
+		mShaders["UIVS"]->GetBufferSize()
+	};
+	uiPSODesc.PS = {
+		reinterpret_cast<BYTE*>(mShaders["UIPS"]->GetBufferPointer()),
+		mShaders["UIPS"]->GetBufferSize()
+	};
+
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&uiPSODesc, IID_PPV_ARGS(&mPSOs["ui"])));
+
 
 	//BILLBOARDED ENEMY PSO
 	//All Commented Out Until Geom Shader Is Properly Set Up, Along With Enemy Geometry
@@ -997,6 +1027,13 @@ void Application::BuildRenderItems()
 		}
 	}
 #endif
+
+	
+#if UI_SPRITE_TOGGLE	
+	auto ui = BuildRenderItem(objectCBIndex, "ui0Geo", "ui0", "Red");
+	mRitemLayer[(int)RenderLayer::UI].emplace_back(ui.get());
+	mAllRitems.push_back(std::move(ui));
+#endif //UI_SPRITE_TOGGLE
 
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
