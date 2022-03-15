@@ -134,7 +134,10 @@ float4 PS(VertexOut pin) : SV_Target
 
 	// Dynamically look up the texture in the array.
 	diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamPointWrap, pin.TexC);
-	
+    
+    clip(diffuseAlbedo.a - 0.5f);
+
+    
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 

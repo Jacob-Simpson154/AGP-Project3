@@ -198,8 +198,10 @@ void Application::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
 
 	mCommandList->OMSetStencilRef(0);
+
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
+
 	mCommandList->SetPipelineState(mPSOs["ui"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::UI]);
 	
@@ -1030,7 +1032,7 @@ void Application::BuildRenderItems()
 
 	
 #if UI_SPRITE_TOGGLE	
-	auto ui = BuildRenderItem(objectCBIndex, "ui0Geo", "ui0", "Red");
+	auto ui = BuildRenderItem(objectCBIndex, "ui0Geo", "ui0", "Tentacle");
 	mRitemLayer[(int)RenderLayer::UI].emplace_back(ui.get());
 	mAllRitems.push_back(std::move(ui));
 #endif //UI_SPRITE_TOGGLE
