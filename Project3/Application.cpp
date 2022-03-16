@@ -129,7 +129,24 @@ void Application::Update(const GameTimer& gt)
 		CloseHandle(eventHandle);
 	}
 
+	// todo pass in appropriate values (positive floats only)
 	pointsDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
+	timeDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
+	ammoDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
+
+	// todo: place in appropriate logic
+	if (gt.TotalTime() > 2.0f)
+	{
+		spriteCtrl[gc::SPRITE_LOSE].SetDisplay(this, false);
+		spriteCtrl[gc::SPRITE_OBJECTIVE].SetDisplay(this, false);
+		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, false);
+	}
+
+	// todo: place in appropriate logic
+	for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
+	{
+		wordCtrl[i].SetDisplay(this, (float)i * 2 < gt.TotalTime());
+	}
 
 	mGameAudio.Update(mTimer.DeltaTime(), mCamera.GetPosition3f(), mCamera.GetLook3f(), mCamera.GetUp3f());
 
@@ -1051,26 +1068,30 @@ void Application::BuildRenderItems()
 	
 #if UI_SPRITE_TOGGLE	
 
+	uint32_t offset = mAllRitems.size();
 
-	// todo change material
-	for(auto& s : gc::UI_SPRITE_DATA)
+	// generic sprites
+	for (size_t i = 0; i < gc::NUM_UI_SPRITES; i++)
 	{
-		auto ui = BuildRenderItem(objectCBIndex, s.geoName,s.subGeoName, "uiMat");
-		XMStoreFloat4x4(&ui->position, Matrix::CreateTranslation(s.position));
+
+		auto ui = BuildRenderItem(objectCBIndex, gc::UI_SPRITE_DATA[i].geoName, gc::UI_SPRITE_DATA[i].subGeoName, "uiMat");
 		mRitemLayer[(int)RenderLayer::UI].emplace_back(ui.get());
 		mAllRitems.push_back(std::move(ui));
+
+		spriteCtrl[i].Init(this, offset++, gc::UI_SPRITE_DATA[i].position, true);
 	}
 
-
+	// char lines sprites
 	{
-		uint32_t firstLineStart = mAllRitems.size();
-		// todo create more
-		for (size_t i = 0; i < gc::UI_NUM_RITEM_CHAR; i++)
+
+		// points display ritems 
+		offset = mAllRitems.size();
+		for (size_t i = 0; i < gc::UI_LINE_1_LEN; i++)
 		{
 			// todo define init char pos in constants.h
 			// todo creates pointers to char ritem 
 			// todo update char uv to show value of vars
-			Vector3 tempPos = Vector3::Zero;
+			Vector3 tempPos = gc::UI_POINTS_POS;
 			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
 
 			Vector3 tempUVW = Vector2::Zero;
@@ -1084,10 +1105,58 @@ void Application::BuildRenderItems()
 			mAllRitems.push_back(std::move(uiChar));
 		}
 		
-		pointsDisplay.Init(this, firstLineStart, 10,Vector3::Zero, 11, 12, 2);
+		pointsDisplay.Init(this, offset, gc::UI_LINE_1_LEN, gc::UI_POINTS_POS, gc::CHAR_PRD, gc::CHAR_PTS, 2);
 		
+		// time display ritems
+		offset = mAllRitems.size();
+		for (size_t i = 0; i < gc::UI_LINE_2_LEN; i++)
+		{
+			Vector3 tempPos = gc::UI_TIME_POS;
+			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
+
+			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
+			XMStoreFloat4x4(&uiChar->position, Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
+			XMStoreFloat4x4(&uiChar->texTransform, Matrix::CreateTranslation(tempUVW));
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiChar.get());
+			mAllRitems.push_back(std::move(uiChar));
+		}
+
+		timeDisplay.Init(this, offset, gc::UI_LINE_2_LEN, gc::UI_TIME_POS, gc::CHAR_COLON, gc::CHAR_TIME, 1);
+
+		// ammo display ritems
+		offset = mAllRitems.size();
+		for (size_t i = 0; i < gc::UI_LINE_3_LEN; i++)
+		{
+			// todo define init char pos in constants.h
+			// todo creates pointers to char ritem 
+			// todo update char uv to show value of vars
+			Vector3 tempPos = gc::UI_TIME_POS;
+			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
+
+			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
+			XMStoreFloat4x4(&uiChar->position, Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
+			XMStoreFloat4x4(&uiChar->texTransform, Matrix::CreateTranslation(tempUVW));
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiChar.get());
+			mAllRitems.push_back(std::move(uiChar));
+		}
+
+		ammoDisplay.Init(this, offset, gc::UI_LINE_3_LEN, gc::UI_AMMO_POS, gc::CHAR_COLON, gc::CHAR_SPC, 0);
+
 	}
+
+	// word sprites
 	{
+
+		offset = mAllRitems.size();
+
 		for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
 		{
 
@@ -1101,17 +1170,16 @@ void Application::BuildRenderItems()
 			tempUVW.y += gc::UI_WORD_INC * (float)i;
 
 			auto uiWord = BuildRenderItem(objectCBIndex, gc::UI_WORD.geoName, gc::UI_WORD.subGeoName, "uiMat");
-			XMStoreFloat4x4(&uiWord->position, Matrix::CreateTranslation(gc::UI_WORD.position + tempPos));
-			XMStoreFloat4x4(&uiWord->texTransform, Matrix::CreateTranslation(tempUVW));
+
 
 			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiWord.get());
 			mAllRitems.push_back(std::move(uiWord));
+
+			wordCtrl[i].Init(this, offset++, gc::UI_WORD.position + tempPos, true, tempUVW);
+
 		}
 
-
-
 	}
-
 
 
 #endif //UI_SPRITE_TOGGLE

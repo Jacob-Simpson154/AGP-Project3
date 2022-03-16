@@ -174,7 +174,7 @@ void UICharLine::Init(
 	Application* const app, 
 	uint32_t ritemOffset, 
 	uint32_t length, 
-	const DirectX::SimpleMath::Vector3 pos, 
+	const DirectX::SimpleMath::Vector3& pos,
 	int decimalSymbol, 
 	int postfixSymbol, 
 	int decimalPlace)
@@ -187,7 +187,7 @@ void UICharLine::Init(
 	
 	auto ir = app->GetAllRItems();
 
-	assert((size_t)(ritemStart + len) < ir->size());
+	assert((size_t)(ritemStart + len-1) < ir->size());
 
 	DirectX::SimpleMath::Vector3 tempPos = pos;
 
@@ -237,16 +237,18 @@ void UICharLine::Update(Application* const app, float dt, float displayValue)
 		if (rIndex != decimalIndex && rIndex != postfixIndex)
 		{
 
-			float p = pow(10.0f, dec);// (dec <= 0.0f) ? pow(10.0f, dec) : 1.0f / pow(10.0f, abs(dec));
+			float p = pow(10.0f, dec);
 			float q = p * 10.0f;
 
 			float v = fmodf( displayValue , q);
 			v = v / p;
-			v = floorf(v);
+			v = max(floorf(v),0.0f);
 			{
 				Vector3 tempPos = Vector3::Zero;
 				tempPos.y += v * gc::UI_CHAR_INC;
-				XMStoreFloat4x4(&ir->at(rIndex).get()->texTransform, DirectX::SimpleMath::Matrix::CreateTranslation(tempPos));
+				XMStoreFloat4x4(
+					&ir->at(rIndex).get()->texTransform, 
+					DirectX::SimpleMath::Matrix::CreateTranslation(tempPos));
 				ir->at(rIndex).get()->NumFramesDirty = 1;
 
 				--rIndex;
@@ -262,4 +264,41 @@ void UICharLine::Update(Application* const app, float dt, float displayValue)
 
 	end = 0;
 
+}
+
+void UISprite::Init(
+	Application* const app, 
+	uint32_t ritemOffset, 
+	const DirectX::SimpleMath::Vector3& onPosition, 
+	bool visible, 
+	const DirectX::SimpleMath::Vector3& uvw)
+{
+	ritemIndex = ritemOffset;
+
+	auto ir = app->GetAllRItems();
+
+	assert(ritemIndex < ir->size());
+
+	pos[OFF] = gc::UI_OFF_POS;
+	pos[ON] = onPosition;
+
+	XMStoreFloat4x4(
+		&ir->at(ritemIndex).get()->position,
+		DirectX::SimpleMath::Matrix::CreateTranslation((visible) ? pos[ON] : pos[OFF]));
+
+	XMStoreFloat4x4(
+		&ir->at(ritemIndex).get()->texTransform,
+		DirectX::SimpleMath::Matrix::CreateTranslation(uvw));
+}
+
+void UISprite::SetDisplay(Application* const app, bool visible)
+{
+	auto ir = app->GetAllRItems();
+	assert(ritemIndex < ir->size());
+
+	XMStoreFloat4x4(
+		&ir->at(ritemIndex).get()->position, 
+		DirectX::SimpleMath::Matrix::CreateTranslation((visible) ? pos[ON] : pos[OFF]));
+	// set to update in objectbuffer
+	ir->at(ritemIndex).get()->NumFramesDirty = 1;
 }

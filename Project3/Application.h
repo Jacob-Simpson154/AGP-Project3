@@ -174,7 +174,11 @@ private:
 	Weapon currentGun;
 	TerrainParams terrainParam;
 	UICharLine pointsDisplay;
+	UICharLine timeDisplay;
+	UICharLine ammoDisplay;
+	// access elements: spriteCtrl[gc::SPRITE_??????] see constants.h
+	UISprite spriteCtrl[gc::NUM_UI_SPRITES];
+	// access elements: wordCtrl[gc::WORD_??????] see constants.h
+	UISprite wordCtrl[gc::UI_NUM_RITEM_WORD];
 	float mAudioVolume = 0.3f;
-	//SpriteSystem spriteSys;
-	//UI ui;
 };
