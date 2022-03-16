@@ -70,6 +70,7 @@ enum class RenderLayer : int
 	Enemy,
 	AmmoBox,
 	HealthBox,
+	UI,
 	Count
 };
 
@@ -124,6 +125,10 @@ public:
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetSpriteGpuDescHandle(const std::string& textureName);
 	const UINT GetCbvSrvDescriptorSize() const;
 	float GetGameTime() const;
+	std::vector<std::unique_ptr<RenderItem>>* GetAllRItems()
+	{
+		return &mAllRitems;
+	}
 
 private:
 
@@ -144,7 +149,7 @@ private:
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSOs;
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
-
+	std::vector< D3D12_INPUT_ELEMENT_DESC> mInputLayoutUi;
 	PassConstants mMainPassCB;
 
 	Camera mCamera;
@@ -171,7 +176,12 @@ private:
 	Boss bossStats;
 	Weapon currentGun;
 	TerrainParams terrainParam;
+	UICharLine pointsDisplay;
+	UICharLine timeDisplay;
+	UICharLine ammoDisplay;
+	// access elements: spriteCtrl[gc::SPRITE_??????] see constants.h
+	UISprite spriteCtrl[gc::NUM_UI_SPRITES];
+	// access elements: wordCtrl[gc::WORD_??????] see constants.h
+	UISprite wordCtrl[gc::UI_NUM_RITEM_WORD];
 	float mAudioVolume = 0.3f;
-	//SpriteSystem spriteSys;
-	//UI ui;
 };

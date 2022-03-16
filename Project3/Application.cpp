@@ -4,7 +4,7 @@
 
 #define TERRAIN 1
 #define OBSTACLE_TOGGLE 1
-
+#define UI_SPRITE_TOGGLE 1
 const int gNumFrameResources = 3;
 
 #pragma comment(lib, "d3dcompiler.lib")
@@ -44,6 +44,11 @@ Application::~Application()
 		FlushCommandQueue();
 }
 
+void DebugMsg(const std::wstring& wstr)
+{
+	OutputDebugString(wstr.c_str());
+}
+
 bool Application::Initialize()
 {
 	if (!D3DApp::Initialize())
@@ -55,8 +60,6 @@ bool Application::Initialize()
 	// Get the increment size of a descriptor in this heap type.  This is hardware specific, 
 	// so we have to query this information.
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	
 
 	mCamera.LookAt(
 		XMFLOAT3(5.0f, 4.0f, -15.0f),
@@ -70,7 +73,6 @@ bool Application::Initialize()
 		ammoBoxClass[i] = AmmoBox(10 * i);
 		healthBoxClass[i] = HealthBox(10 * i);
 	}
-
 
 
 	BuildAudio();
@@ -87,6 +89,8 @@ bool Application::Initialize()
 	BuildRenderItems();
 	BuildFrameResources();
 	BuildPSOs();
+
+
 
 	cameraBox = BoundingBox(mCamera.GetPosition3f(), XMFLOAT3(1, 1, 1));
 
@@ -125,6 +129,25 @@ void Application::Update(const GameTimer& gt)
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, eventHandle));
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
+	}
+
+	// todo pass in appropriate values (positive floats only)
+	pointsDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
+	timeDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
+	ammoDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
+
+	// todo: place in appropriate logic
+	if (gt.TotalTime() > 2.0f)
+	{
+		spriteCtrl[gc::SPRITE_LOSE].SetDisplay(this, false);
+		spriteCtrl[gc::SPRITE_OBJECTIVE].SetDisplay(this, false);
+		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, false);
+	}
+
+	// todo: place in appropriate logic
+	for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
+	{
+		wordCtrl[i].SetDisplay(this, (float)i * 2 < gt.TotalTime());
 	}
 
 	mGameAudio.Update(mTimer.DeltaTime(), mCamera.GetPosition3f(), mCamera.GetLook3f(), mCamera.GetUp3f());
@@ -210,9 +233,12 @@ void Application::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::HealthBox]);
 
 	mCommandList->OMSetStencilRef(0);
+
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
 
+	mCommandList->SetPipelineState(mPSOs["ui"].Get());
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::UI]);
 	
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -336,6 +362,7 @@ void Application::UpdateObjectCBs(const GameTimer& gt)
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
 	for (auto& e : mAllRitems)
 	{
+
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
 		if (e->NumFramesDirty > 0)
@@ -443,6 +470,7 @@ void Application::LoadTextures()
 	LoadTexture(L"Data/Textures/Tentacle.dds", "tempTex");
 	LoadTexture(L"Data/Textures/obstacle.dds", "houseTex");
 	LoadTexture(L"Data/Textures/terrain.dds", "terrainTex");
+	LoadTexture(L"Data/Textures/ui.dds", "uiTex");
 }
 
 void Application::BuildAudio()
@@ -564,7 +592,8 @@ void Application::BuildDescriptorHeaps()
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("terrainTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-
+	CreateSRV("uiTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 }
 
 void Application::BuildShadersAndInputLayout()
@@ -585,6 +614,19 @@ void Application::BuildShadersAndInputLayout()
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
+
+#if UI_SPRITE_TOGGLE
+	mShaders["UIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["UIPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "PS", "ps_5_1");
+
+	mInputLayoutUi =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	};
+#endif //UI_SPRITE_TOGGLE
+
 }
 
 void Application::BuildTerrainGeometry()
@@ -716,7 +758,20 @@ void Application::BuildGeometry()
 		BuildObjGeometry(gc::OBSTACLE_DATA[i].filename, gc::OBSTACLE_DATA[i].geoName, gc::OBSTACLE_DATA[i].subGeoName);
 	}
 #endif //OBSTACLE_TOGGLE
+	;
+#if UI_SPRITE_TOGGLE
 
+	BuildObjGeometry(gc::UI_CHAR.filename, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName);
+	BuildObjGeometry(gc::UI_WORD.filename, gc::UI_WORD.geoName, gc::UI_WORD.subGeoName);
+
+
+	for (auto& s : gc::UI_SPRITE_DATA)
+	{
+		BuildObjGeometry(s.filename, s.geoName, s.subGeoName);
+	}
+
+
+#endif //UI_SPRITE_TOGGLE
 }
 
 void Application::BuildEnemySpritesGeometry()
@@ -843,8 +898,6 @@ void Application::BuildPSOs()
 	highlightPsoDesc.BlendState.RenderTarget[0] = transparencyBlendDesc;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&highlightPsoDesc, IID_PPV_ARGS(&mPSOs["highlight"])));
 
-
-
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC alphaTestedPSODesc = opaquePsoDesc;
 	alphaTestedPSODesc.PS = {
 		reinterpret_cast<BYTE*>(mShaders["alphaTestedPS"]->GetBufferPointer()), 
@@ -852,6 +905,19 @@ void Application::BuildPSOs()
 	};
 	alphaTestedPSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&alphaTestedPSODesc, IID_PPV_ARGS(&mPSOs["alphaTested"])));
+
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC uiPSODesc = alphaTestedPSODesc;
+	uiPSODesc.VS = {
+		reinterpret_cast<BYTE*>(mShaders["UIVS"]->GetBufferPointer()),
+		mShaders["UIVS"]->GetBufferSize()
+	};
+	uiPSODesc.PS = {
+		reinterpret_cast<BYTE*>(mShaders["UIPS"]->GetBufferPointer()),
+		mShaders["UIPS"]->GetBufferSize()
+	};
+
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&uiPSODesc, IID_PPV_ARGS(&mPSOs["ui"])));
+
 
 	//BILLBOARDED ENEMY PSO
 	//All Commented Out Until Geom Shader Is Properly Set Up, Along With Enemy Geometry
@@ -919,6 +985,7 @@ void Application::BuildMaterials()
 	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
 	BuildMaterial(2, "HouseMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	BuildMaterial(3, "TerrainMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(4, "uiMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
 }
 
@@ -1027,6 +1094,125 @@ void Application::BuildRenderItems()
 		}
 	}
 #endif
+
+	
+#if UI_SPRITE_TOGGLE	
+
+	uint32_t offset = mAllRitems.size();
+
+	// generic sprites
+	for (size_t i = 0; i < gc::NUM_UI_SPRITES; i++)
+	{
+
+		auto ui = BuildRenderItem(objectCBIndex, gc::UI_SPRITE_DATA[i].geoName, gc::UI_SPRITE_DATA[i].subGeoName, "uiMat");
+		mRitemLayer[(int)RenderLayer::UI].emplace_back(ui.get());
+		mAllRitems.push_back(std::move(ui));
+
+		spriteCtrl[i].Init(this, offset++, gc::UI_SPRITE_DATA[i].position, true);
+	}
+
+	// char lines sprites
+	{
+
+		// points display ritems 
+		offset = mAllRitems.size();
+		for (size_t i = 0; i < gc::UI_LINE_1_LEN; i++)
+		{
+			// todo define init char pos in constants.h
+			// todo creates pointers to char ritem 
+			// todo update char uv to show value of vars
+			Vector3 tempPos = gc::UI_POINTS_POS;
+			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
+
+			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
+			XMStoreFloat4x4(&uiChar->position,  Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
+			XMStoreFloat4x4(&uiChar->texTransform,  Matrix::CreateTranslation( tempUVW));
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiChar.get());
+			mAllRitems.push_back(std::move(uiChar));
+		}
+		
+		pointsDisplay.Init(this, offset, gc::UI_LINE_1_LEN, gc::UI_POINTS_POS, gc::CHAR_PRD, gc::CHAR_PTS, 2);
+		
+		// time display ritems
+		offset = mAllRitems.size();
+		for (size_t i = 0; i < gc::UI_LINE_2_LEN; i++)
+		{
+			Vector3 tempPos = gc::UI_TIME_POS;
+			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
+
+			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
+			XMStoreFloat4x4(&uiChar->position, Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
+			XMStoreFloat4x4(&uiChar->texTransform, Matrix::CreateTranslation(tempUVW));
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiChar.get());
+			mAllRitems.push_back(std::move(uiChar));
+		}
+
+		timeDisplay.Init(this, offset, gc::UI_LINE_2_LEN, gc::UI_TIME_POS, gc::CHAR_COLON, gc::CHAR_TIME, 1);
+
+		// ammo display ritems
+		offset = mAllRitems.size();
+		for (size_t i = 0; i < gc::UI_LINE_3_LEN; i++)
+		{
+			// todo define init char pos in constants.h
+			// todo creates pointers to char ritem 
+			// todo update char uv to show value of vars
+			Vector3 tempPos = gc::UI_TIME_POS;
+			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
+
+			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
+			XMStoreFloat4x4(&uiChar->position, Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
+			XMStoreFloat4x4(&uiChar->texTransform, Matrix::CreateTranslation(tempUVW));
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiChar.get());
+			mAllRitems.push_back(std::move(uiChar));
+		}
+
+		ammoDisplay.Init(this, offset, gc::UI_LINE_3_LEN, gc::UI_AMMO_POS, gc::CHAR_COLON, gc::CHAR_SPC, 0);
+
+	}
+
+	// word sprites
+	{
+
+		offset = mAllRitems.size();
+
+		for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
+		{
+
+			// todo define init word pos in constants.h
+			// todo creates pointers to word ritem 
+			
+			Vector3 tempPos = Vector3::Zero;
+			tempPos.y += 0.06f * (float)i;
+
+			Vector3 tempUVW = Vector2::Zero;
+			tempUVW.y += gc::UI_WORD_INC * (float)i;
+
+			auto uiWord = BuildRenderItem(objectCBIndex, gc::UI_WORD.geoName, gc::UI_WORD.subGeoName, "uiMat");
+
+
+			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiWord.get());
+			mAllRitems.push_back(std::move(uiWord));
+
+			wordCtrl[i].Init(this, offset++, gc::UI_WORD.position + tempPos, true, tempUVW);
+
+		}
+
+	}
+
+
+#endif //UI_SPRITE_TOGGLE
 
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());

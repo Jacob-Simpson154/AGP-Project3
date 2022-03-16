@@ -2,6 +2,7 @@
 #include "Application.h" // access to Application through pointer
 #include "ResourceUploadBatch.h"
 #include <CommonStates.h>
+#include "Constants.h"
 
 #ifndef UI_SPRITE_RENDER_TOGGLE
 #define	UI_SPRITE_RENDER_TOGGLE 0
@@ -169,3 +170,135 @@ void SpriteSystem::Draw(ID3D12GraphicsCommandList* commandList, const D3D12_VIEW
 
 }
 
+void UICharLine::Init(
+	Application* const app, 
+	uint32_t ritemOffset, 
+	uint32_t length, 
+	const DirectX::SimpleMath::Vector3& pos,
+	int decimalSymbol, 
+	int postfixSymbol, 
+	int decimalPlace)
+{
+	ritemStart = ritemOffset;
+	len = length;
+	this->decimalPlace = decimalPlace;
+	this->postfixSymbol = postfixSymbol;
+	this->decimalSymbol = decimalSymbol;
+	
+	auto ir = app->GetAllRItems();
+
+	assert((size_t)(ritemStart + len-1) < ir->size());
+
+	DirectX::SimpleMath::Vector3 tempPos = pos;
+
+	postfixIndex = ritemStart + (len - 1);
+	decimalIndex = postfixIndex - decimalPlace - 1;
+
+	assert(ritemStart < postfixIndex);
+	assert(ritemStart < decimalIndex);
+
+	// set position 
+	for (uint32_t i = 0; i < length; i++)
+	{
+		uint32_t rIndex = ritemStart + i;
+		tempPos.x += gc::UI_CHAR_SPACING;
+		XMStoreFloat4x4(&ir->at(rIndex).get()->position, DirectX::SimpleMath::Matrix::CreateTranslation(tempPos));
+	}
+
+	// set uv for decimal sym and postfix sym
+	{
+		tempPos = Vector3::Zero;
+		tempPos.y += postfixSymbol * gc::UI_CHAR_INC;
+		XMStoreFloat4x4(&ir->at(postfixIndex).get()->texTransform, DirectX::SimpleMath::Matrix::CreateTranslation(tempPos));
+	}
+
+	{
+		tempPos = Vector3::Zero;
+		tempPos.y += decimalSymbol * gc::UI_CHAR_INC;
+		XMStoreFloat4x4(&ir->at(decimalIndex).get()->texTransform, DirectX::SimpleMath::Matrix::CreateTranslation(tempPos));
+	}
+
+}
+
+void UICharLine::Update(Application* const app, float dt, float displayValue)
+{
+	auto ir = app->GetAllRItems();
+
+	// last element
+	uint32_t rIndex = ritemStart + len - 1;
+
+	float dec = (float)-decimalPlace;
+
+	int start = -decimalPlace;
+	int end = len - decimalPlace ;
+
+	for (int i = start; i < end; i++)
+	{
+		if (rIndex != decimalIndex && rIndex != postfixIndex)
+		{
+
+			float p = pow(10.0f, dec);
+			float q = p * 10.0f;
+
+			float v = fmodf( displayValue , q);
+			v = v / p;
+			v = max(floorf(v),0.0f);
+			{
+				Vector3 tempPos = Vector3::Zero;
+				tempPos.y += v * gc::UI_CHAR_INC;
+				XMStoreFloat4x4(
+					&ir->at(rIndex).get()->texTransform, 
+					DirectX::SimpleMath::Matrix::CreateTranslation(tempPos));
+				ir->at(rIndex).get()->NumFramesDirty = 1;
+
+				--rIndex;
+			}
+
+			dec = dec + 1.0f;
+		}
+		else
+		{
+			--rIndex;
+		}
+	}
+
+	end = 0;
+
+}
+
+void UISprite::Init(
+	Application* const app, 
+	uint32_t ritemOffset, 
+	const DirectX::SimpleMath::Vector3& onPosition, 
+	bool visible, 
+	const DirectX::SimpleMath::Vector3& uvw)
+{
+	ritemIndex = ritemOffset;
+
+	auto ir = app->GetAllRItems();
+
+	assert(ritemIndex < ir->size());
+
+	pos[OFF] = gc::UI_OFF_POS;
+	pos[ON] = onPosition;
+
+	XMStoreFloat4x4(
+		&ir->at(ritemIndex).get()->position,
+		DirectX::SimpleMath::Matrix::CreateTranslation((visible) ? pos[ON] : pos[OFF]));
+
+	XMStoreFloat4x4(
+		&ir->at(ritemIndex).get()->texTransform,
+		DirectX::SimpleMath::Matrix::CreateTranslation(uvw));
+}
+
+void UISprite::SetDisplay(Application* const app, bool visible)
+{
+	auto ir = app->GetAllRItems();
+	assert(ritemIndex < ir->size());
+
+	XMStoreFloat4x4(
+		&ir->at(ritemIndex).get()->position, 
+		DirectX::SimpleMath::Matrix::CreateTranslation((visible) ? pos[ON] : pos[OFF]));
+	// set to update in objectbuffer
+	ir->at(ritemIndex).get()->NumFramesDirty = 1;
+}

@@ -15,6 +15,58 @@
 
 class Application;
 
+// floating point number display (unsigned)
+class UICharLine
+{
+
+	// offset in renderitem vector
+	uint32_t ritemStart = 0;
+	// number of chars in array
+	uint32_t len = 0;
+	// char index
+	int decimalSymbol;
+	// char index
+	int postfixSymbol;
+	int decimalPlace;
+
+	uint32_t decimalIndex;
+	uint32_t postfixIndex;
+public:
+	void Init(Application* const app, uint32_t ritemOffset, uint32_t length, const DirectX::SimpleMath::Vector3& pos, int decimalSymbol = 11, int postfixSymbol = 12, int decimalPlace = 2);
+	void Update(Application* const app, float dt, float dislpayValue);
+};
+
+
+
+class UISprite
+{
+public:
+	enum { OFF, ON, COUNT };
+private:
+	uint32_t ritemIndex = 0;
+public:
+	DirectX::SimpleMath::Vector3 pos[COUNT];
+	// call when setting up ritems
+	// uwv for 'words' only
+	void Init(Application* const app, uint32_t ritemOffset, const DirectX::SimpleMath::Vector3& pos, bool visible = true, const DirectX::SimpleMath::Vector3& uvw = DirectX::SimpleMath::Vector3::Zero);
+	// call before UpdateObjectBuffer
+	void SetDisplay(Application* const app, bool display);
+	
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+// depricated
 struct Text
 {
 	std::string string = "";
@@ -30,7 +82,7 @@ struct Text
 	Text() = default;
 	Text(const Text&) = default;
 };
-
+// depricated
 struct Sprite
 {
 	std::string textureName; //lookup gpu handle
@@ -55,6 +107,7 @@ struct Sprite
 
 
 // container for text and sprites
+// depricated
 struct UI
 {
 	// index for text/spr containers
@@ -74,6 +127,7 @@ struct UI
 };
 
 // manages rendering of screen space sprites and text 
+// depricated
 class SpriteSystem
 {
 private:
