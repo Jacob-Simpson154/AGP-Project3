@@ -71,6 +71,7 @@ enum class RenderLayer : int
 	AmmoBox,
 	HealthBox,
 	UI,
+	PointsGS,
 	Count
 };
 
@@ -107,6 +108,7 @@ private:
 	void BuildDescriptorHeaps();
 	void BuildShadersAndInputLayout();
 	void BuildTerrainGeometry();
+	void BuildPointsGeometry();
 	void BuildGeometry();
 	void BuildEnemySpritesGeometry();
 	void BuildPSOs();
@@ -150,6 +152,8 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	std::vector< D3D12_INPUT_ELEMENT_DESC> mInputLayoutUi;
+	//todo rename
+	std::vector< D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
 	PassConstants mMainPassCB;
 
 	Camera mCamera;
