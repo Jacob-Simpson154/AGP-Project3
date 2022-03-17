@@ -62,13 +62,20 @@ struct Vertex
 	DirectX::XMFLOAT2 TexC;
 };
 
+// point structure for gs
+struct Point
+{
+    DirectX::XMFLOAT3 Pos;
+    DirectX::XMFLOAT2 Size;
+};
+
 // Stores the resources needed for the CPU to build the command lists
 // for a frame.  
 struct FrameResource
 {
 public:
     
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount);
+    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT pointsCount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -83,6 +90,10 @@ public:
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 
 	std::unique_ptr<UploadBuffer<MaterialData>> MaterialBuffer = nullptr;
+
+    // geometery shader object
+    // pass data to this in app::update()
+    std::unique_ptr<UploadBuffer<Point>> PointsVB = nullptr;
 
     // Fence value to mark commands up to this fence point.  This lets us
     // check if these frame resources are still in use by the GPU.

@@ -23,6 +23,16 @@ typedef DirectX::SimpleMath::Vector3 Vector3;
 
 typedef DirectX::SimpleMath::Matrix Matrix;
 
+// boss/ enemy/ particle 
+// todo rename or remove (when appropriate)
+struct GenericPointSomething
+{
+	// ideally const set from constants.h
+	uint32_t vertexCount = 0;
+	std::vector<Point> vData;
+
+};
+
 struct RenderItem
 {
 	RenderItem();
@@ -99,6 +109,7 @@ private:
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialBuffer(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
+	void UpdatePoints(const GameTimer& gt);
 	void LoadTexture(const std::wstring& filename, const std::string& name);
 	void LoadTextures();
 	void BuildAudio();
@@ -166,6 +177,15 @@ private:
 	//all existing items
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
+	
+	// gs item
+	// dont think this needs to be dynamically created. Just needs vertexCount for GPU buffer
+	// TBC: could be enemy/boss/particle class... just needs vertex count (index count as well?)
+	GenericPointSomething mPoints;// std::unique_ptr<GenericPointSomething> mPoints;
+	// gs item
+	// build in BuildRenderItems (points topology)
+	// update appropriate VertexBufferGPU
+	RenderItem* mPointsRitem = nullptr;
 
 	AudioSystem mGameAudio;
 

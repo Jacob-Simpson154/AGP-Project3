@@ -6,6 +6,7 @@
 #define OBSTACLE_TOGGLE 1
 #define UI_SPRITE_TOGGLE 1
 #define GS_TOGGLE 1
+#define DYMANIC_VERTEX_SETUP 1
 const int gNumFrameResources = 3;
 
 #pragma comment(lib, "d3dcompiler.lib")
@@ -157,6 +158,9 @@ void Application::Update(const GameTimer& gt)
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
+
+	UpdatePoints(gt);
+
 
 	int checkIndex = 0;
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
@@ -716,13 +720,39 @@ void Application::BuildTerrainGeometry()
 
 }
 
+void Application::UpdatePoints(const GameTimer& gt)
+{
+#if DYMANIC_VERTEX_SETUP
+
+	// makeshift update for vertices within geometry. 
+	// todo ideally call something like mPoints.Update(gt);
+	{
+		for (uint32_t i = 0; i < mPoints.vertexCount; i++)
+		{
+			mPoints.vData.at(i).Pos.x = sinf(gt.TotalTime() * (float)i);
+			mPoints.vData.at(i).Pos = ApplyTerrainHeight(mPoints.vData.at(i).Pos, terrainParam);
+		}
+	}
+
+	// copy updated cpu data to gpu
+	// required every frame
+	auto pointsVB = mCurrFrameResource->PointsVB.get();
+	for (uint32_t i = 0; i < mPoints.vertexCount; i++)
+	{
+		pointsVB->CopyData(i, mPoints.vData.at(i));
+	}
+
+	mPointsRitem->geometry->VertexBufferGPU = pointsVB->Resource();
+
+#endif
+}
+
 /// <summary>
 /// Construct all geometry, needs to be done prior to run time
 /// </summary>
 void Application::BuildGeometry()
 {
 	//Build all geometry here
-	//
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
 	{
@@ -799,16 +829,59 @@ void Application::BuildGeometry()
 void Application::BuildPointsGeometry()
 {
 
-#if GS_TOGGLE
-
-	struct TreeSpriteVertex
-	{
-		XMFLOAT3 Pos;
-		XMFLOAT2 Size;
-	};
-
+#if	DYMANIC_VERTEX_SETUP
 	static const int treeCount = 16;
-	std::array<TreeSpriteVertex, 16> vertices;
+	mPoints.vertexCount = treeCount;
+	assert(mPoints.vertexCount < 0x0000ffff);
+	mPoints.vData.resize(treeCount);
+
+	// todo remove when setup configured
+	for (size_t i = 0; i < mPoints.vertexCount; i++)
+	{
+		Vector3 pos = Vector3(RandFloat(-50.0f, 50.0f), 0.0f, RandFloat(-50.0f, 50.0f));
+		mPoints.vData.at(i).Pos = ApplyTerrainHeight(pos, terrainParam);
+	}
+	
+	std::array<std::uint16_t, 16> indices;
+
+	for (uint16_t i = 0; i < indices.size(); i++)
+	{
+		indices.at(i) = i;
+	}
+
+	UINT vbByteSize = mPoints.vertexCount * sizeof(Point);
+	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "pointsGeo";
+	
+	// dymamically set
+	geo->VertexBufferCPU = nullptr;
+	geo->VertexBufferGPU = nullptr;
+
+	// setup gpu index buffer
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Point);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = (UINT)indices.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs["points"] = submesh;
+
+	mGeometries[geo->Name] = std::move(geo);
+
+#else //DYMANIC_VERTEX_SETUP // static
+	static const int treeCount = 16;
+	std::array<Point, 16> vertices;
 	for (UINT i = 0; i < treeCount; ++i)
 	{
 		Vector3 pos = Vector3(
@@ -827,7 +900,7 @@ void Application::BuildPointsGeometry()
 		8, 9, 10, 11, 12, 13, 14, 15
 	};
 
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(TreeSpriteVertex);
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Point);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -845,7 +918,7 @@ void Application::BuildPointsGeometry()
 	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
 		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(TreeSpriteVertex);
+	geo->VertexByteStride = sizeof(Point);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
@@ -858,7 +931,9 @@ void Application::BuildPointsGeometry()
 	geo->DrawArgs["points"] = submesh;
 
 	mGeometries["treeSpritesGeo"] = std::move(geo);
-#endif //GS_TOGGLE
+#endif
+
+
 
 	
 
@@ -1065,7 +1140,7 @@ void Application::BuildFrameResources()
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
 		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-			1, (UINT)mAllRitems.size(), (UINT)mMaterials.size()));
+			1, (UINT)mAllRitems.size(), (UINT)mMaterials.size(),(UINT)mPoints.vertexCount));
 	}
 }
 
@@ -1330,9 +1405,14 @@ void Application::BuildRenderItems()
 
 	
 #if GS_TOGGLE
-	auto ri = BuildRenderItem(objectCBIndex, "treeSpritesGeo", "points", "Tentacle", D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-	mRitemLayer[(int)RenderLayer::PointsGS].emplace_back(ri.get());
-	mAllRitems.push_back(std::move(ri));
+	{
+		auto ri = BuildRenderItem(objectCBIndex, "pointsGeo", "points", "Tentacle", D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+		// for update
+		mPointsRitem = ri.get();
+		mRitemLayer[(int)RenderLayer::PointsGS].emplace_back(ri.get());
+		mAllRitems.push_back(std::move(ri));
+	}
+
 #endif //GS_TOGGLE
 
 
@@ -1353,6 +1433,7 @@ void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 	auto matCB = mCurrFrameResource->MaterialBuffer->Resource();
+
 
 	//Draw items block here
 	for (size_t i = 0; i < ritems.size(); ++i)
