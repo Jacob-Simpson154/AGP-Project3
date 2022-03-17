@@ -84,16 +84,34 @@ cbuffer cbPass : register(b1)
     Light gLights[MaxLights];
 };
 
+// typical input
+//struct VertexIn
+//{
+//    float3 PosL : POSITION;
+//    float3 NormalL : NORMAL;
+//    float2 TexC : TEXCOORD;
+//};
+
+//// input for points to be exanded
 struct VertexIn
 {
-	float3 PosL    : POSITION;
-    float3 NormalL : NORMAL;
-	float2 TexC    : TEXCOORD;
+    float3 PosL : POSITION;
+    float2 TexC : SIZE;
+    float4 TexRect : TEXRECT;
+    float4 BillboardType : BILLBOARD;
 };
 
 struct VertexOut
 {
 	float4 PosH    : SV_POSITION;
+    float3 PosW    : POSITION;
+    float3 NormalW : NORMAL;
+	float2 TexC    : TEXCOORD;
+};
+
+struct GeomOut
+{
+    float4 PosH    : SV_POSITION;
     float3 PosW    : POSITION;
     float3 NormalW : NORMAL;
 	float2 TexC    : TEXCOORD;
@@ -111,7 +129,7 @@ VertexOut VS(VertexIn vin)
     vout.PosW = posW.xyz;
 
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
-    vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
+    //vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
 
     // Transform to homogeneous clip space.
     vout.PosH = mul(posW, gViewProj);

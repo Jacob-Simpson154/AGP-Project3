@@ -7,6 +7,13 @@
 #define UI_SPRITE_TOGGLE 1
 #define GS_TOGGLE 1
 #define DYMANIC_VERTEX_SETUP 1
+// check the following structs match
+//	VertexIn (Geometry.hlsl)                   
+//	Point (FrameResource.h)                 
+//	mGeoInputLayout (App:BuildShadersAndInputLayout) 
+#define POINTS_SHADER_INPUT 1
+
+
 const int gNumFrameResources = 3;
 
 #pragma comment(lib, "d3dcompiler.lib")
@@ -159,6 +166,7 @@ void Application::Update(const GameTimer& gt)
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
 
+	//
 	UpdatePoints(gt);
 
 
@@ -245,7 +253,7 @@ void Application::Draw(const GameTimer& gt)
 	mCommandList->SetPipelineState(mPSOs["ui"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::UI]);
 
-	mCommandList->SetPipelineState(mPSOs["treeSprites"].Get());
+	mCommandList->SetPipelineState(mPSOs["pointSprites"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::PointsGS]);
 	
 	// Indicate a state transition on the resource usage.
@@ -637,17 +645,22 @@ void Application::BuildShadersAndInputLayout()
 
 #if GS_TOGGLE
 
-	mShaders["treeSpriteVS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["treeSpriteGS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "GS", "gs_5_1");
-	mShaders["treeSpritePS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", alphaTestDefines, "PS", "ps_5_1");
-
-	mTreeSpriteInputLayout =
+	mShaders["pointSpriteVS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["pointSpriteGS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "GS", "gs_5_1");
+	mShaders["pointSpritePS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "PS", "ps_5_1");
+	
+	mPointSpriteInputLayout =
 	{
+#if POINTS_SHADER_INPUT
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,		0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT,				0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXRECT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,		0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BILLBOARD", 0, DXGI_FORMAT_R8_SINT,				0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+#else
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		//{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		//{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+#endif
 	};
 #endif
 }
@@ -720,6 +733,7 @@ void Application::BuildTerrainGeometry()
 
 }
 
+// place after cb update
 void Application::UpdatePoints(const GameTimer& gt)
 {
 #if DYMANIC_VERTEX_SETUP
@@ -830,10 +844,10 @@ void Application::BuildPointsGeometry()
 {
 
 #if	DYMANIC_VERTEX_SETUP
-	static const int treeCount = 16;
-	mPoints.vertexCount = treeCount;
+	static const int pointCount = 16;
+	mPoints.vertexCount = pointCount;
 	assert(mPoints.vertexCount < 0x0000ffff);
-	mPoints.vData.resize(treeCount);
+	mPoints.vData.resize(pointCount);
 
 	// todo remove when setup configured
 	for (size_t i = 0; i < mPoints.vertexCount; i++)
@@ -878,59 +892,6 @@ void Application::BuildPointsGeometry()
 	geo->DrawArgs["points"] = submesh;
 
 	mGeometries[geo->Name] = std::move(geo);
-
-#else //DYMANIC_VERTEX_SETUP // static
-	static const int treeCount = 16;
-	std::array<Point, 16> vertices;
-	for (UINT i = 0; i < treeCount; ++i)
-	{
-		Vector3 pos = Vector3(
-			MathHelper::RandF(-45.0f, 45.0f),
-			0.0f,
-			MathHelper::RandF(-45.0f, 45.0f));
-		pos = ApplyTerrainHeight(pos, terrainParam);
-		pos.y += 8.0f;
-		vertices[i].Pos = pos;
-		vertices[i].Size = XMFLOAT2(20.0f, 20.0f);
-	}
-
-	std::array<std::uint16_t, 16> indices =
-	{
-		0, 1, 2, 3, 4, 5, 6, 7,
-		8, 9, 10, 11, 12, 13, 14, 15
-	};
-
-	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Point);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "treeSpritesGeo";
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
-
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Point);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geo->DrawArgs["points"] = submesh;
-
-	mGeometries["treeSpritesGeo"] = std::move(geo);
 #endif
 
 
@@ -941,6 +902,7 @@ void Application::BuildPointsGeometry()
 
 void Application::BuildEnemySpritesGeometry()
 {
+	
 	struct CacoSpriteVertex
 	{
 		XMFLOAT3 Pos;
@@ -967,7 +929,6 @@ void Application::BuildEnemySpritesGeometry()
 		0, 1, 2, 3, 4, 5, 6, 7,
 		8, 9, 10, 11, 12, 13, 14, 15
 	};
-
 
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(CacoSpriteVertex);
@@ -1084,27 +1045,27 @@ void Application::BuildPSOs()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&uiPSODesc, IID_PPV_ARGS(&mPSOs["ui"])));
 
 #if GS_TOGGLE
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC treeSpritePsoDesc = opaquePsoDesc;
-	treeSpritePsoDesc.VS =
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pointSpritePsoDesc = opaquePsoDesc;
+	pointSpritePsoDesc.VS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["treeSpriteVS"]->GetBufferPointer()),
-		mShaders["treeSpriteVS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["pointSpriteVS"]->GetBufferPointer()),
+		mShaders["pointSpriteVS"]->GetBufferSize()
 	};
-	treeSpritePsoDesc.GS =
+	pointSpritePsoDesc.GS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["treeSpriteGS"]->GetBufferPointer()),
-		mShaders["treeSpriteGS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["pointSpriteGS"]->GetBufferPointer()),
+		mShaders["pointSpriteGS"]->GetBufferSize()
 	};
-	treeSpritePsoDesc.PS =
+	pointSpritePsoDesc.PS =
 	{
-		reinterpret_cast<BYTE*>(mShaders["treeSpritePS"]->GetBufferPointer()),
-		mShaders["treeSpritePS"]->GetBufferSize()
+		reinterpret_cast<BYTE*>(mShaders["pointSpritePS"]->GetBufferPointer()),
+		mShaders["pointSpritePS"]->GetBufferSize()
 	};
-	treeSpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-	treeSpritePsoDesc.InputLayout = { mTreeSpriteInputLayout.data(), (UINT)mTreeSpriteInputLayout.size() };
-	treeSpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	pointSpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	pointSpritePsoDesc.InputLayout = { mPointSpriteInputLayout.data(), (UINT)mPointSpriteInputLayout.size() };
+	pointSpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
 
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&treeSpritePsoDesc, IID_PPV_ARGS(&mPSOs["treeSprites"])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&pointSpritePsoDesc, IID_PPV_ARGS(&mPSOs["pointSprites"])));
 
 #endif //GS_TOGGLE
 
@@ -1168,7 +1129,6 @@ void Application::BuildMaterials()
 	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
-
 
 	// MATT TEXTURE STUFF
 	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));

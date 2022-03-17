@@ -62,11 +62,22 @@ struct Vertex
 	DirectX::XMFLOAT2 TexC;
 };
 
+// 
+enum  BillboardType : int {
+    NONE, 
+    POINT_ORIENTATION,  // point at cam
+    AXIS_ORIENTATION,   // point at cam about Y axis
+    FIXED_SINGLE,       // single sided 
+    FIXED_DOUBLE,       // double sided
+    FIXED_CROSS         // 2x double sided perpendicular for 3D effect
+};
 // point structure for gs
 struct Point
 {
     DirectX::XMFLOAT3 Pos;
     DirectX::XMFLOAT2 Size;
+    DirectX::XMFLOAT4 TexRect;
+    BillboardType BillboardType = BillboardType::NONE;
 };
 
 // Stores the resources needed for the CPU to build the command lists

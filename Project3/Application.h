@@ -164,7 +164,7 @@ private:
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	std::vector< D3D12_INPUT_ELEMENT_DESC> mInputLayoutUi;
 	//todo rename
-	std::vector< D3D12_INPUT_ELEMENT_DESC> mTreeSpriteInputLayout;
+	std::vector< D3D12_INPUT_ELEMENT_DESC> mPointSpriteInputLayout;
 	PassConstants mMainPassCB;
 
 	Camera mCamera;
