@@ -119,6 +119,7 @@ private:
 	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
 	void CheckCameraCollision();
+	void PlayFootAudio(float);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 public:
 	// access textures for screen space sprites
@@ -184,4 +185,6 @@ private:
 	// access elements: wordCtrl[gc::WORD_??????] see constants.h
 	UISprite wordCtrl[gc::UI_NUM_RITEM_WORD];
 	float mAudioVolume = 0.3f;
+	float footStepTimer = 0.0f;
+	float footStepInterval = 0.4f;
 };

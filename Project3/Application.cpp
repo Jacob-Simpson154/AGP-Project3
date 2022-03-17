@@ -323,23 +323,37 @@ void Application::OnMouseMove(WPARAM btnState, int x, int y)
 void Application::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
+	bool isWalking = false;
 
 	if (GetAsyncKeyState('W') & 0x8000)
+	{
 		mCamera.Walk(10.0f * dt);
+		isWalking = true;
+	}
 
 	if (GetAsyncKeyState('S') & 0x8000)
 	{
 		mCamera.Walk(-10.0f * dt);
+		isWalking = true;
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
+	{
 		mCamera.Strafe(-10.0f * dt);
+		isWalking = true;
+	}
 
 	if (GetAsyncKeyState('D') & 0x8000)
+	{
 		mCamera.Strafe(10.0f * dt);
+		isWalking = true;
+	}
 
 	if (GetAsyncKeyState('R') & 0x8000)
+	{
+		mGameAudio.Play("Pickup", nullptr, false, mAudioVolume, RandomPitchValue());
 		currentGun.Reload();
+	}
 
 	if (GetAsyncKeyState('P') & 0x8000)
 		fpsReady = false;
@@ -347,6 +361,8 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 	mCamera.UpdateViewMatrix();
 	cameraBox.Center = mCamera.GetPosition3f();
 	CheckCameraCollision();
+	if (isWalking == true)
+		PlayFootAudio(dt);
 }
 
 /// <summary>
@@ -1437,6 +1453,16 @@ void Application::CheckCameraCollision()
 		}
 	}
 
+}
+
+void Application::PlayFootAudio(float dt)
+{
+	footStepTimer += dt;
+	if (footStepTimer >= footStepInterval)
+	{
+		footStepTimer = 0;
+		mGameAudio.Play("PlayerFootstep", nullptr, false, mAudioVolume, RandomPitchValue());
+	}
 }
 
 std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> Application::GetStaticSamplers()
