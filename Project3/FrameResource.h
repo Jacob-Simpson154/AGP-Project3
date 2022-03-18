@@ -67,7 +67,7 @@ struct Vertex
 	DirectX::XMFLOAT2 TexC;
 };
 
-// 
+// implemented in gs
 enum class BillboardType : int {
     POINT_ORIENTATION,  // point at cam
     AXIS_ORIENTATION,   // point at cam about Y axis

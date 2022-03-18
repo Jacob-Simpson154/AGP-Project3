@@ -2,11 +2,9 @@
 #include "OBJ_Loader.h"
 #include "Util.h"
 
-#define TERRAIN 1
 #define OBSTACLE_TOGGLE 1
 #define UI_SPRITE_TOGGLE 1
 #define GS_TOGGLE 1
-#define DYMANIC_VERTEX_SETUP 1
 // check the following structs match
 //	VertexIn (Geometry.hlsl)                   
 //	Point (FrameResource.h)                 
@@ -89,11 +87,8 @@ bool Application::Initialize()
 	BuildRootSignature();
 	BuildDescriptorHeaps();
 	BuildShadersAndInputLayout();
-	BuildGeometry();
-#if TERRAIN
 	BuildTerrainGeometry();
-#endif // TERRAIN
-
+	BuildGeometry();
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
@@ -654,7 +649,6 @@ void Application::BuildShadersAndInputLayout()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 
-#if UI_SPRITE_TOGGLE
 	mShaders["UIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["UIPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "PS", "ps_5_1");
 
@@ -664,7 +658,6 @@ void Application::BuildShadersAndInputLayout()
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
-#endif //UI_SPRITE_TOGGLE
 
 #if GS_TOGGLE
 
@@ -759,11 +752,12 @@ void Application::BuildTerrainGeometry()
 // place after cb update
 void Application::UpdatePoints(const GameTimer& gt)
 {
-
 	for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
 	{
 		auto gpVB = mCurrFrameResource->GeoPointVB[vb].get();
 		size_t vertexCount = gc::NUM_GEO_POINTS[vb];
+
+		assert(mGeoPoints.at(vb).size() == gc::NUM_GEO_POINTS[vb] && "Cannot be resized after building geometry. Add/Remove in gc::NUM_GEO_POINTS");
 
 		for (size_t v = 0; v < vertexCount; v++)
 		{
@@ -1233,13 +1227,11 @@ void Application::BuildRenderItems()
 		}
 	}
 
-#if TERRAIN
 	{
 		auto terrain = BuildRenderItem(objectCBIndex, "landGeo", "grid", "TerrainMat");
 		mRitemLayer[(int)RenderLayer::World].emplace_back(terrain.get());
 		mAllRitems.push_back(std::move(terrain));
 	}
-#endif
 	
 #if OBSTACLE_TOGGLE
 	{
@@ -1285,9 +1277,6 @@ void Application::BuildRenderItems()
 		offset = mAllRitems.size();
 		for (size_t i = 0; i < gc::UI_LINE_1_LEN; i++)
 		{
-			// todo define init char pos in constants.h
-			// todo creates pointers to char ritem 
-			// todo update char uv to show value of vars
 			Vector3 tempPos = gc::UI_POINTS_POS;
 			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
 
@@ -1328,9 +1317,6 @@ void Application::BuildRenderItems()
 		offset = mAllRitems.size();
 		for (size_t i = 0; i < gc::UI_LINE_3_LEN; i++)
 		{
-			// todo define init char pos in constants.h
-			// todo creates pointers to char ritem 
-			// todo update char uv to show value of vars
 			Vector3 tempPos = gc::UI_TIME_POS;
 			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
 

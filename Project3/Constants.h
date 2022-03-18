@@ -105,11 +105,12 @@ namespace gc
 
 	// adapt if frame rsc geoPointVB changes
 
+	// number of points per geometry passed to gs
 	const uint32_t NUM_GEO_POINTS[4]
 	{
 		1u, //NUM_BOSS
 		32U, //NUM_ENEMIES 
-		30U,//NUM_PARTICLES
+		100U,//NUM_PARTICLES
 		32U  //NUM_SCENERY
 	};
 
