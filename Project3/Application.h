@@ -23,6 +23,16 @@ typedef DirectX::SimpleMath::Vector3 Vector3;
 
 typedef DirectX::SimpleMath::Matrix Matrix;
 
+// boss/ enemy/ particle 
+// todo rename or remove (when appropriate)
+struct GenericPointSomething
+{
+	// ideally const set from constants.h
+	uint32_t vertexCount = 0;
+	std::vector<Point> vData;
+
+};
+
 struct RenderItem
 {
 	RenderItem();
@@ -71,6 +81,7 @@ enum class RenderLayer : int
 	AmmoBox,
 	HealthBox,
 	UI,
+	PointsGS,
 	Count
 };
 
@@ -98,6 +109,7 @@ private:
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMaterialBuffer(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
+	void UpdatePoints(const GameTimer& gt);
 	void LoadTexture(const std::wstring& filename, const std::string& name);
 	void LoadTextures();
 	void BuildAudio();
@@ -107,6 +119,7 @@ private:
 	void BuildDescriptorHeaps();
 	void BuildShadersAndInputLayout();
 	void BuildTerrainGeometry();
+	void BuildPointsGeometry();
 	void BuildGeometry();
 	void BuildEnemySpritesGeometry();
 	void BuildPSOs();
@@ -151,6 +164,8 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	std::vector< D3D12_INPUT_ELEMENT_DESC> mInputLayoutUi;
+	// for gs processing
+	std::vector< D3D12_INPUT_ELEMENT_DESC> mPointSpriteInputLayout;
 	PassConstants mMainPassCB;
 
 	Camera mCamera;
@@ -163,6 +178,13 @@ private:
 	//all existing items
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
+	
+	// data from gameobjects to be passed to geometry shader
+	std::array<std::vector<Point>, GeoPointIndex::COUNT> mGeoPoints;
+	// allows updated vertex data to be passed to geometry shader
+	std::array <RenderItem*, GeoPointIndex::COUNT> mGeoPointsRitems;
+
+
 
 	AudioSystem mGameAudio;
 

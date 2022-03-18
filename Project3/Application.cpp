@@ -5,6 +5,15 @@
 #define TERRAIN 1
 #define OBSTACLE_TOGGLE 1
 #define UI_SPRITE_TOGGLE 1
+#define GS_TOGGLE 1
+#define DYMANIC_VERTEX_SETUP 1
+// check the following structs match
+//	VertexIn (Geometry.hlsl)                   
+//	Point (FrameResource.h)                 
+//	mGeoInputLayout (App:BuildShadersAndInputLayout) 
+#define POINTS_SHADER_INPUT 1
+
+
 const int gNumFrameResources = 3;
 
 #pragma comment(lib, "d3dcompiler.lib")
@@ -157,6 +166,10 @@ void Application::Update(const GameTimer& gt)
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
 
+	//
+	UpdatePoints(gt);
+
+
 	int checkIndex = 0;
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
 	{
@@ -239,6 +252,9 @@ void Application::Draw(const GameTimer& gt)
 
 	mCommandList->SetPipelineState(mPSOs["ui"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::UI]);
+
+	mCommandList->SetPipelineState(mPSOs["pointSprites"].Get());
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::PointsGS]);
 	
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -650,6 +666,26 @@ void Application::BuildShadersAndInputLayout()
 	};
 #endif //UI_SPRITE_TOGGLE
 
+#if GS_TOGGLE
+
+	mShaders["pointSpriteVS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["pointSpriteGS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "GS", "gs_5_1");
+	mShaders["pointSpritePS"] = d3dUtil::CompileShader(L"Shaders\\Geometry.hlsl", nullptr, "PS", "ps_5_1");
+	
+	mPointSpriteInputLayout =
+	{
+#if POINTS_SHADER_INPUT
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,		0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "SIZE", 0, DXGI_FORMAT_R32G32_FLOAT,				0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXRECT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,		0, 20, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BILLBOARD", 0, DXGI_FORMAT_R8_SINT,				0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+#else
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+#endif
+	};
+#endif
 }
 
 void Application::BuildTerrainGeometry()
@@ -720,13 +756,31 @@ void Application::BuildTerrainGeometry()
 
 }
 
+// place after cb update
+void Application::UpdatePoints(const GameTimer& gt)
+{
+
+	for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
+	{
+		auto gpVB = mCurrFrameResource->GeoPointVB[vb].get();
+		size_t vertexCount = gc::NUM_GEO_POINTS[vb];
+
+		for (size_t v = 0; v < vertexCount; v++)
+		{
+			gpVB->CopyData(v, mGeoPoints.at(vb).at(v));
+		}
+
+		// updates ritems
+		mGeoPointsRitems[vb]->geometry->VertexBufferGPU = gpVB->Resource();
+	}
+}
+
 /// <summary>
 /// Construct all geometry, needs to be done prior to run time
 /// </summary>
 void Application::BuildGeometry()
 {
 	//Build all geometry here
-	//
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.0f, 1.0f, 1.0f, 3);
 	{
@@ -793,12 +847,72 @@ void Application::BuildGeometry()
 		BuildObjGeometry(s.filename, s.geoName, s.subGeoName);
 	}
 
-
 #endif //UI_SPRITE_TOGGLE
+
+#if GS_TOGGLE
+	BuildPointsGeometry();
+#endif //GS_TOGGLE
+}
+
+void Application::BuildPointsGeometry()
+{
+	// initialises correct number of points for each geometery point object
+	{
+
+		std::vector<std::uint16_t> indices;
+
+		for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
+		{
+			size_t vertexCount = gc::NUM_GEO_POINTS[vb];
+
+			mGeoPoints.at(vb).resize(vertexCount);
+			indices.resize(vertexCount);
+
+			assert(mGeoPoints.at(vb).size() < 0x0000ffff);
+
+			// todo remove when setup configured
+			for (size_t v = 0; v < vertexCount; v++)
+			{
+				Vector3 pos = Vector3(RandFloat(-50.0f, 50.0f), 0.0f, RandFloat(-50.0f, 50.0f));
+				mGeoPoints.at(vb).at(v).Pos = ApplyTerrainHeight(pos, terrainParam);
+				indices.at(v) = (uint16_t)v;
+			}
+
+			UINT vbByteSize = (UINT)vertexCount * sizeof(Point);
+			UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+			auto geo = std::make_unique<MeshGeometry>();
+			geo->Name = gc::GEO_POINT_NAME[vb].geoName;
+
+			geo->VertexBufferCPU = nullptr;
+			geo->VertexBufferGPU = nullptr;
+
+			// setup gpu index buffer
+			ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+			CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+			geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+				mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+			geo->VertexByteStride = sizeof(Point);
+			geo->VertexBufferByteSize = vbByteSize;
+			geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+			geo->IndexBufferByteSize = ibByteSize;
+
+			SubmeshGeometry submesh;
+			submesh.IndexCount = (UINT)indices.size();
+			submesh.StartIndexLocation = 0;
+			submesh.BaseVertexLocation = 0;
+
+			geo->DrawArgs[gc::GEO_POINT_NAME[vb].subGeoName] = submesh;
+
+			mGeometries[geo->Name] = std::move(geo);
+		}
+	}
 }
 
 void Application::BuildEnemySpritesGeometry()
 {
+	
 	struct CacoSpriteVertex
 	{
 		XMFLOAT3 Pos;
@@ -825,7 +939,6 @@ void Application::BuildEnemySpritesGeometry()
 		0, 1, 2, 3, 4, 5, 6, 7,
 		8, 9, 10, 11, 12, 13, 14, 15
 	};
-
 
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(CacoSpriteVertex);
@@ -941,6 +1054,30 @@ void Application::BuildPSOs()
 
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&uiPSODesc, IID_PPV_ARGS(&mPSOs["ui"])));
 
+#if GS_TOGGLE
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pointSpritePsoDesc = opaquePsoDesc;
+	pointSpritePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["pointSpriteVS"]->GetBufferPointer()),
+		mShaders["pointSpriteVS"]->GetBufferSize()
+	};
+	pointSpritePsoDesc.GS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["pointSpriteGS"]->GetBufferPointer()),
+		mShaders["pointSpriteGS"]->GetBufferSize()
+	};
+	pointSpritePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["pointSpritePS"]->GetBufferPointer()),
+		mShaders["pointSpritePS"]->GetBufferSize()
+	};
+	pointSpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	pointSpritePsoDesc.InputLayout = { mPointSpriteInputLayout.data(), (UINT)mPointSpriteInputLayout.size() };
+	pointSpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&pointSpritePsoDesc, IID_PPV_ARGS(&mPSOs["pointSprites"])));
+
+#endif //GS_TOGGLE
 
 	//BILLBOARDED ENEMY PSO
 	//All Commented Out Until Geom Shader Is Properly Set Up, Along With Enemy Geometry
@@ -973,8 +1110,16 @@ void Application::BuildFrameResources()
 {
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
-		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-			1, (UINT)mAllRitems.size(), (UINT)mMaterials.size()));
+		mFrameResources.push_back(std::make_unique<FrameResource>(
+			md3dDevice.Get(),
+			1, 
+			(UINT)mAllRitems.size(), 
+			(UINT)mMaterials.size(),
+			(UINT)mGeoPoints.at(GeoPointIndex::BOSS).size(), 
+			(UINT)mGeoPoints.at(GeoPointIndex::ENEMY).size(),
+			(UINT)mGeoPoints.at(GeoPointIndex::PARTICLE).size(),
+			(UINT)mGeoPoints.at(GeoPointIndex::SCENERY).size()
+			));
 	}
 }
 
@@ -1002,7 +1147,6 @@ void Application::BuildMaterials()
 	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
-
 
 	// MATT TEXTURE STUFF
 	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
@@ -1237,6 +1381,25 @@ void Application::BuildRenderItems()
 
 #endif //UI_SPRITE_TOGGLE
 
+	{
+		// todo chage to appropriate render layer
+		RenderLayer gpRlayer[GeoPointIndex::COUNT]
+		{
+			RenderLayer::Enemy,
+			RenderLayer::Enemy,
+			RenderLayer::World,
+			RenderLayer::World
+		};
+
+		for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
+		{
+			auto ri = BuildRenderItem(objectCBIndex, gc::GEO_POINT_NAME[vb].geoName, gc::GEO_POINT_NAME[vb].subGeoName, "Tentacle", D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+			mGeoPointsRitems[vb] = ri.get();
+			mRitemLayer[(int)gpRlayer[vb]].push_back(ri.get());
+			mAllRitems.push_back(std::move(ri));
+		}
+	}
+
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
 
@@ -1254,6 +1417,7 @@ void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 
 	auto objectCB = mCurrFrameResource->ObjectCB->Resource();
 	auto matCB = mCurrFrameResource->MaterialBuffer->Resource();
+
 
 	//Draw items block here
 	for (size_t i = 0; i < ritems.size(); ++i)

@@ -67,13 +67,53 @@ struct Vertex
 	DirectX::XMFLOAT2 TexC;
 };
 
+// 
+enum class BillboardType : int {
+    POINT_ORIENTATION,  // point at cam
+    AXIS_ORIENTATION,   // point at cam about Y axis
+    FIXED_SINGLE,       // single sided 
+    FIXED_DOUBLE,       // double sided
+    FIXED_CROSS,         // 2x double sided perpendicular for 3D effect
+    NONE, 
+};
+// point structure for gs
+struct Point
+{
+    // position in world space 
+    DirectX::XMFLOAT3 Pos = DirectX::XMFLOAT3(0.0f, 0.0f,0.0f);
+    // width and height of sprite
+    DirectX::XMFLOAT2 Size = DirectX::XMFLOAT2(1.0f,1.0f);
+    // normalised uv coordinates
+    // left,top,width,height
+    DirectX::XMFLOAT4 TexRect = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+    // set to none to disable rendering of sprite
+    BillboardType Billboard = BillboardType::NONE;
+};
+
+enum GeoPointIndex
+{
+    BOSS,
+    ENEMY,
+    PARTICLE,
+    SCENERY,
+    COUNT
+};
+
 // Stores the resources needed for the CPU to build the command lists
 // for a frame.  
 struct FrameResource
 {
 public:
-    
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount);
+    // todo remove pointsCOunt
+    FrameResource(
+        ID3D12Device* device, 
+        UINT passCount, 
+        UINT objectCount, 
+        UINT materialCount, 
+        UINT bossCount, 
+        UINT enemyCount, 
+        UINT particleCount, 
+        UINT sceneryCount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -88,6 +128,11 @@ public:
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 
 	std::unique_ptr<UploadBuffer<MaterialData>> MaterialBuffer = nullptr;
+
+    // geometery shader objects
+    // pass data to this in app::update()
+    std::unique_ptr<UploadBuffer<Point>> GeoPointVB[GeoPointIndex::COUNT] = { nullptr,nullptr,nullptr,nullptr };
+
 
     // Fence value to mark commands up to this fence point.  This lets us
     // check if these frame resources are still in use by the GPU.

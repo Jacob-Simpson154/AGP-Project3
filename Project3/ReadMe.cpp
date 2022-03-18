@@ -126,4 +126,19 @@
 //		}
 //
 
-
+// GS Setup WIP
+//
+// FrameResource declare
+//		std::unique_ptr<UploadBuffer<Point>> PointsVB = nullptr;
+//	FrameResource construction	
+//		PointsVB = std::make_unique<UploadBuffer<Point>>(device, pointsCount, false); // pass count in as param
+// 
+// App
+//		std::unique_ptr<GenericPointSomething> mPoints; // dont think this needs to be dynamically created. Just needs vertexCount for GPU buffer
+//		RenderItem* mPointsRitem = nullptr;				// set in buildRitems, update in update
+//
+//      
+//
+//
+//
+//
