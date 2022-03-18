@@ -74,9 +74,13 @@ enum class BillboardType : int {
 // point structure for gs
 struct Point
 {
+    // position in world space 
     DirectX::XMFLOAT3 Pos;
+    // width and height of sprite
     DirectX::XMFLOAT2 Size;
+    // normalised uv coordinates
     DirectX::XMFLOAT4 TexRect;
+    // set to none to disable rendering of sprite
     BillboardType Billboard = BillboardType::NONE;
 };
 
@@ -103,8 +107,7 @@ public:
         UINT bossCount, 
         UINT enemyCount, 
         UINT particleCount, 
-        UINT sceneryCount, 
-        UINT pointsCount);
+        UINT sceneryCount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -124,8 +127,6 @@ public:
     // pass data to this in app::update()
     std::unique_ptr<UploadBuffer<Point>> GeoPointVB[GeoPointIndex::COUNT] = { nullptr,nullptr,nullptr,nullptr };
 
-    // todo remove pointsVB
-    std::unique_ptr<UploadBuffer<Point>> PointsVB = nullptr;
 
     // Fence value to mark commands up to this fence point.  This lets us
     // check if these frame resources are still in use by the GPU.

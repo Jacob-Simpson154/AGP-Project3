@@ -104,6 +104,7 @@ namespace gc
 	const DirectX::SimpleMath::Vector3 UI_OFF_POS{ 100.0f,100.0f,00.0f };
 
 	// adapt if frame rsc geoPointVB changes
+
 	const uint32_t NUM_GEO_POINTS[4]
 	{
 		1u, //NUM_BOSS

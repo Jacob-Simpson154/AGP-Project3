@@ -749,35 +749,7 @@ void Application::UpdatePoints(const GameTimer& gt)
 
 		// updates ritems
 		mGeoPointsRitems[vb]->geometry->VertexBufferGPU = gpVB->Resource();
-		
 	}
-
-#if DYMANIC_VERTEX_SETUP
-
-	// makeshift update for vertices within geometry. 
-	// todo ideally call something like mPoints.Update(gt);
-	{
-		for (uint32_t i = 0; i < mPoints.vertexCount; i++)
-		{
-			mPoints.vData.at(i).Pos.x = sinf(gt.TotalTime() * (float)i);
-			mPoints.vData.at(i).Pos = ApplyTerrainHeight(mPoints.vData.at(i).Pos, terrainParam);
-		}
-	}
-
-	// copy updated cpu data to gpu
-	// required every frame
-	auto pointsVB = mCurrFrameResource->PointsVB.get();
-	for (uint32_t i = 0; i < mPoints.vertexCount; i++)
-	{
-		pointsVB->CopyData(i, mPoints.vData.at(i));
-	}
-
-	mPointsRitem->geometry->VertexBufferGPU = pointsVB->Resource();
-	
-#else
-
-
-#endif
 }
 
 /// <summary>
@@ -914,65 +886,6 @@ void Application::BuildPointsGeometry()
 			mGeometries[geo->Name] = std::move(geo);
 		}
 	}
-
-
-
-
-#if	DYMANIC_VERTEX_SETUP
-	static const int pointCount = 16;
-	mPoints.vertexCount = pointCount;
-	assert(mPoints.vertexCount < 0x0000ffff);
-	mPoints.vData.resize(pointCount);
-
-	// todo remove when setup configured
-	for (size_t i = 0; i < mPoints.vertexCount; i++)
-	{
-		Vector3 pos = Vector3(RandFloat(-50.0f, 50.0f), 0.0f, RandFloat(-50.0f, 50.0f));
-		mPoints.vData.at(i).Pos = ApplyTerrainHeight(pos, terrainParam);
-	}
-	
-	std::array<std::uint16_t, 16> indices;
-
-	for (uint16_t i = 0; i < indices.size(); i++)
-	{
-		indices.at(i) = i;
-	}
-
-	UINT vbByteSize = mPoints.vertexCount * sizeof(Point);
-	UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "pointsGeo";
-	
-	// dymamically set
-	geo->VertexBufferCPU = nullptr;
-	geo->VertexBufferGPU = nullptr;
-
-	// setup gpu index buffer
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(Point);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	geo->DrawArgs["points"] = submesh;
-
-	mGeometries[geo->Name] = std::move(geo);
-#endif
-
-
-
-	
-
 }
 
 void Application::BuildEnemySpritesGeometry()
@@ -1183,8 +1096,7 @@ void Application::BuildFrameResources()
 			(UINT)mGeoPoints.at(GeoPointIndex::BOSS).size(), 
 			(UINT)mGeoPoints.at(GeoPointIndex::ENEMY).size(),
 			(UINT)mGeoPoints.at(GeoPointIndex::PARTICLE).size(),
-			(UINT)mGeoPoints.at(GeoPointIndex::SCENERY).size(),
-			(UINT)mPoints.vertexCount
+			(UINT)mGeoPoints.at(GeoPointIndex::SCENERY).size()
 			));
 	}
 }
@@ -1465,19 +1377,6 @@ void Application::BuildRenderItems()
 			mAllRitems.push_back(std::move(ri));
 		}
 	}
-
-
-	
-#if GS_TOGGLE
-	{
-		auto ri = BuildRenderItem(objectCBIndex, "pointsGeo", "points", "Tentacle", D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-		// for update
-		mPointsRitem = ri.get();
-		mRitemLayer[(int)RenderLayer::PointsGS].emplace_back(ri.get());
-		mAllRitems.push_back(std::move(ri));
-	}
-
-#endif //GS_TOGGLE
 
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());

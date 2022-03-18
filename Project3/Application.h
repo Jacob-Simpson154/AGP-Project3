@@ -178,19 +178,12 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 	
-	// gs item
-	// must contain array of Point 
-	// TBC: could be enemy/boss/particle class... just needs vertex count (index count as well?)
-	GenericPointSomething mPoints;// std::unique_ptr<GenericPointSomething> mPoints;
-
+	// data from gameobjects to be passed to geometry shader
 	std::array<std::vector<Point>, GeoPointIndex::COUNT> mGeoPoints;
-	// gs item
-	// build in BuildRenderItems (points topology)
-	// update appropriate VertexBufferGPU
+	// allows updated vertex data to be passed to geometry shader
 	std::array <RenderItem*, GeoPointIndex::COUNT> mGeoPointsRitems;
 
-	// todo remove
-	RenderItem* mPointsRitem = nullptr;
+
 
 	AudioSystem mGameAudio;
 
