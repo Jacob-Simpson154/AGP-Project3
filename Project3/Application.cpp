@@ -833,7 +833,6 @@ void Application::BuildGeometry()
 
 void Application::BuildPointsGeometry()
 {
-
 	// initialises correct number of points for each geometery point object
 	{
 
@@ -1363,10 +1362,10 @@ void Application::BuildRenderItems()
 		// todo chage to appropriate render layer
 		RenderLayer gpRlayer[GeoPointIndex::COUNT]
 		{
-			RenderLayer::PointsGS,
-			RenderLayer::PointsGS,
-			RenderLayer::PointsGS,
-			RenderLayer::PointsGS
+			RenderLayer::Enemy,
+			RenderLayer::Enemy,
+			RenderLayer::World,
+			RenderLayer::World
 		};
 
 		for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)

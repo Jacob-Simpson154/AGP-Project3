@@ -64,22 +64,23 @@ struct Vertex
 
 // 
 enum class BillboardType : int {
-    NONE, 
     POINT_ORIENTATION,  // point at cam
     AXIS_ORIENTATION,   // point at cam about Y axis
     FIXED_SINGLE,       // single sided 
     FIXED_DOUBLE,       // double sided
-    FIXED_CROSS         // 2x double sided perpendicular for 3D effect
+    FIXED_CROSS,         // 2x double sided perpendicular for 3D effect
+    NONE, 
 };
 // point structure for gs
 struct Point
 {
     // position in world space 
-    DirectX::XMFLOAT3 Pos;
+    DirectX::XMFLOAT3 Pos = DirectX::XMFLOAT3(0.0f, 0.0f,0.0f);
     // width and height of sprite
-    DirectX::XMFLOAT2 Size;
+    DirectX::XMFLOAT2 Size = DirectX::XMFLOAT2(1.0f,1.0f);
     // normalised uv coordinates
-    DirectX::XMFLOAT4 TexRect;
+    // left,top,width,height
+    DirectX::XMFLOAT4 TexRect = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
     // set to none to disable rendering of sprite
     BillboardType Billboard = BillboardType::NONE;
 };

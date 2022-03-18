@@ -95,18 +95,21 @@ cbuffer cbPass : register(b1)
 //// input for points to be exanded
 struct VertexIn
 {
-    float3 PosL : POSITION;
-    float2 TexC : SIZE;
+    float3 Pos : POSITION;
+    float2 Size : SIZE;
     float4 TexRect : TEXRECT;
-    float4 BillboardType : BILLBOARD;
+    int BillboardType : BILLBOARD;
+
 };
 
 struct VertexOut
 {
-	float4 PosH    : SV_POSITION;
-    float3 PosW    : POSITION;
-    float3 NormalW : NORMAL;
-	float2 TexC    : TEXCOORD;
+    float3 Pos : POSITION;
+    float2 Size : SIZE;
+    float4 TexRect : TEXRECT;
+    // only accetps floats
+    float BillboardType : BILLBOARD;
+    float2 Buffer0 : B0;
 };
 
 struct GeomOut
@@ -119,67 +122,102 @@ struct GeomOut
 
 VertexOut VS(VertexIn vin)
 {
-	VertexOut vout = (VertexOut)0.0f;
-
-	// Fetch the material data.
-	MaterialData matData = gMaterialData[gMaterialIndex];
-	
-    // Transform to world space.
-    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
-    vout.PosW = posW.xyz;
-
-    // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
-    //vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
-
-    // Transform to homogeneous clip space.
-    vout.PosH = mul(posW, gViewProj);
-	
-	// Output vertex attributes for interpolation across triangle.
-	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
-	vout.TexC = mul(texC, matData.MatTransform).xy;
-	
+    VertexOut vout = (VertexOut)0.0f;
+    
+    vout.Pos = vin.Pos;
+    vout.Size = vin.Size;
+    vout.TexRect = vin.TexRect;
+    // offset to avoid rounding errors
+    vout.BillboardType = float(vin.BillboardType) + 0.5f; 
     return vout;
 }
 
-
-[maxvertexcount(4)]
-void GS(point VertexOut gin[1], 
-        uint primID : SV_PrimitiveID, 
-        inout TriangleStream<VertexOut> triStream)
+void BillboardingSingleFixed(VertexOut gin, inout TriangleStream<GeomOut> triStream)
 {
-    
-    
-    
-    float x = 5.0f;
-    float y = 20.0f;
+    float x = gin.Size.x * 0.5f;
+    float y = gin.Size.y * 0.5f;
     
     float3 v[4];
-	v[0] = float3(-x,-y,0.0f) + gin[0].PosW;
-	v[1] = float3(-x,+y,0.0f) + gin[0].PosW;
-	v[2] = float3(+x,-y,0.0f) + gin[0].PosW;
-	v[3] = float3(+x,+y,0.0f) + gin[0].PosW;
+	v[0] = gin.Pos + float3(-x,-y,0.0f) ;
+	v[1] = gin.Pos + float3(-x,+y,0.0f) ;
+	v[2] = gin.Pos + float3(+x,-y,0.0f) ;
+	v[3] = gin.Pos + float3(+x,+y,0.0f) ;
     
     
     float2 uv[4];
-    uv[3] = float2(0.0f,0.0f);
-    uv[2] = float2(0.0f,1.0f);
-    uv[1] = float2(1.0f,0.0f);
-    uv[0] = float2(1.0f,1.0f);
+    uv[0] = float2(gin.TexRect.x , gin.TexRect.y + gin.TexRect.w );                 //float2(1.0f,1.0f);
+    uv[1] = float2(gin.TexRect.x , gin.TexRect.y );                                 //float2(1.0f,0.0f);
+    uv[2] = float2(gin.TexRect.x + gin.TexRect.z, gin.TexRect.y + gin.TexRect.w);   //float2(0.0f,1.0f);
+    uv[3] = float2(gin.TexRect.x + gin.TexRect.z,gin.TexRect.y);                    //float2(0.0f,0.0f); 
     
-    VertexOut output = gin[0];
+    GeomOut output = gin;
     for(int i = 0; i < 4; ++i)
     {
         output.PosH = mul(float4(v[i],1.0f), gViewProj);
-        output.PosW = v[i];
+        output.PosW = v[i].xyz;
+        output.NormalW = float3(0.0f, 0.0f, 1.0f);
         
         output.TexC = uv[i];
         triStream.Append(output);
     }
-    
+}
+
+void BillboardingPointOrientation(VertexOut gin, inout TriangleStream<GeomOut> triStream)
+{
+    // todo
+}
+
+void BillboardingAxisOrientation(VertexOut gin, inout TriangleStream<GeomOut> triStream)
+{
+    // todo
+}
+void BillboardingFixedDouble(VertexOut gin, inout TriangleStream<GeomOut> triStream)
+{
+    // todo
+}
+void BillboardingFixedCross(VertexOut gin, inout TriangleStream<GeomOut> triStream)
+{
+    // todo
+}
+
+[maxvertexcount(4)]
+void GS(point VertexOut gin[1], 
+        uint primID : SV_PrimitiveID, 
+        inout TriangleStream<GeomOut> triStream)
+{
+    // BillboardType POINT_ORIENTATION
+    if (gin[0].BillboardType < 1.0f)
+    {
+        BillboardingPointOrientation(gin[0], triStream);
+    } 
+    // BillboardType AXIS_ORIENTATION
+    else if(gin[0].BillboardType < 2.0f)
+    {
+        BillboardingAxisOrientation(gin[0], triStream);
+    } 
+    // BillboardType FIXED_SINGLE
+    else if(gin[0].BillboardType < 3.0f)
+    {
+        BillboardingSingleFixed(gin[0], triStream);
+    }
+    // BillboardType FIXED_DOUBLE
+    else if(gin[0].BillboardType < 4.0f)
+    {
+        BillboardingFixedDouble(gin[0], triStream);
+    }
+    // BillboardType FIXED_CROSS
+    else if(gin[0].BillboardType < 5.0f)
+    {
+        BillboardingFixedCross(gin[0], triStream);
+    }
+    else // BillboardType NONE
+    {
+        // does not display
+    }
 }
 
 
-float4 PS(VertexOut pin) : SV_Target
+float4 PS(GeomOut pin) : SV_Target
 {
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[gMaterialIndex];
@@ -227,5 +265,4 @@ float4 PS(VertexOut pin) : SV_Target
     
     return litColor;
 }
-
 
