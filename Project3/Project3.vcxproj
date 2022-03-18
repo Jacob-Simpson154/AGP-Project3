@@ -157,8 +157,10 @@
     <ClCompile Include="Common\GameTimer.cpp" />
     <ClCompile Include="Common\GeometryGenerator.cpp" />
     <ClCompile Include="Common\MathHelper.cpp" />
+    <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="HealthBox.cpp" />
+    <ClCompile Include="Mob.cpp" />
     <ClCompile Include="ReadMe.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="Terrain.cpp" />
@@ -187,6 +189,10 @@
     <ClInclude Include="TimerInterval.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Util.h" />
+    <ClInclude Include="Enemy.h" />
+    <ClInclude Include="FrameResource.h" />
+    <ClInclude Include="Mob.h" />
+    <ClInclude Include="RenderItemStruct.h" />
     <ClInclude Include="Weapon.h" />
   </ItemGroup>
   <ItemGroup>

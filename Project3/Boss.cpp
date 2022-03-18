@@ -1,8 +1,15 @@
 #include "Boss.h"
 
+
+using Microsoft::WRL::ComPtr;
+using namespace DirectX;
+using namespace DirectX::PackedVector;
+
 Boss::Boss()
 {
-
+	hp = 100;
+	posX = 0;
+	posZ = 0;
 }
 
 Boss::~Boss()
@@ -10,17 +17,15 @@ Boss::~Boss()
 
 }
 
-void Boss::Setup(int s, int h)
+void Boss::Setup(RenderItem* geo, Camera* player)
 {
-	stage = s;
-	health = h;
+	geoObject = geo;
+	playerObject = player;
 }
 
-bool Boss::DealDamage(int damage)
-{
-	health -= damage;
-	if (health <= 0)
-		return true;
-	else return false;
+void Boss::Movement() {
+	XMStoreFloat4x4(&geoObject->position, XMMatrixTranslation(posX, posY + tt, posZ));
+	geoObject->NumFramesDirty = gNumFrameResources;
+	tt += 0.01f;
 }
 

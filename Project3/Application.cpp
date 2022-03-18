@@ -97,7 +97,21 @@ bool Application::Initialize()
 
 
 	cameraBox = BoundingBox(mCamera.GetPosition3f(), XMFLOAT3(1, 1, 1));
+	mCamera->LookAt(
+		XMFLOAT3(5.0f, 4.0f, -15.0f),
+		XMFLOAT3(0.0f, 1.0f, 0.0f),
+		XMFLOAT3(0.0f, 1.0f, 0.0f));
+	currentGun.Setup("Pistol", 25, 7);
+	bossStats.Setup(mAllRitems.at(5).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry
+	for (size_t i = 0; i < 4; i++)
+	{
+		Mob m = Mob();
+		mobs.push_back(m);
+		mobs.at(i).Setup(mAllRitems.at(6 + i).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry
+	}
 
+
+	cameraBox = BoundingBox(mCamera->GetPosition3f(), XMFLOAT3(1, 1, 1));
 
 	// Execute the initialization commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -114,12 +128,13 @@ void Application::OnResize()
 {
 	D3DApp::OnResize();
 
-	mCamera.SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+	mCamera->SetLens(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 }
 
 void Application::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
+	//SetCursorPos(mClientWidth / 2, mClientHeight / 2); 神 - Playing around this to try and make the cursor fixed to the screen
 
 	// Cycle through the circular frame resource array.
 	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
@@ -154,9 +169,12 @@ void Application::Update(const GameTimer& gt)
 		wordCtrl[i].SetDisplay(this, (float)i * 2 < gt.TotalTime());
 	}
 
-	mGameAudio.Update(mTimer.DeltaTime(), mCamera.GetPosition3f(), mCamera.GetLook3f(), mCamera.GetUp3f());
+	mGameAudio.Update(mTimer.DeltaTime(), mCamera->GetPosition3f(), mCamera->GetLook3f(), mCamera->GetUp3f());
 
 	AnimateMaterials(gt);
+
+	UpdateMovement();
+
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
@@ -320,8 +338,8 @@ void Application::OnMouseMove(WPARAM btnState, int x, int y)
 		float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
 		float dy = XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
 
-		mCamera.Pitch(dy);
-		mCamera.RotateY(dx);
+		mCamera->Pitch(dy);
+		mCamera->RotateY(dx);
 	}
 
 	mLastMousePos.x = x;
@@ -369,8 +387,8 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 	if (GetAsyncKeyState('P') & 0x8000)
 		fpsReady = false;
 
-	mCamera.UpdateViewMatrix();
-	cameraBox.Center = mCamera.GetPosition3f();
+	mCamera->UpdateViewMatrix();
+	cameraBox.Center = mCamera->GetPosition3f();
 	CheckCameraCollision();
 	if (isWalking == true)
 		PlayFootAudio(dt);
@@ -382,6 +400,12 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 void Application::AnimateMaterials(const GameTimer& gt)
 {
 
+}
+
+void Application::UpdateMovement()
+{
+	bossStats.Movement();
+	for (size_t i = 0; i < mobs.size(); i++) mobs.at(i).Movement();
 }
 
 void Application::UpdateObjectCBs(const GameTimer& gt)
@@ -442,8 +466,8 @@ void Application::UpdateMaterialBuffer(const GameTimer& gt)
 /// </summary>
 void Application::UpdateMainPassCB(const GameTimer& gt)
 {
-	XMMATRIX view = mCamera.GetView();
-	XMMATRIX proj = mCamera.GetProj();
+	XMMATRIX view = mCamera->GetView();
+	XMMATRIX proj = mCamera->GetProj();
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
@@ -456,7 +480,7 @@ void Application::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(invProj));
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-	mMainPassCB.EyePosW = mCamera.GetPosition3f();
+	mMainPassCB.EyePosW = mCamera->GetPosition3f();
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	mMainPassCB.NearZ = 1.0f;
@@ -1187,7 +1211,36 @@ void Application::BuildRenderItems()
 	// boss transformations
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	bossBox = BoundingBox(position, scale);
+	bossBox = BoundingBox(position, scale);//神
+	bossBox = BoundingBox(XMFLOAT3(posX, posY, posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
+
+	// Mobs
+	auto mob_1 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	// mob transformations
+	XMStoreFloat4x4(&mob_1->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(-5, 5, 0));
+	XMStoreFloat4x4(&mob_1->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	mobBox[0] = BoundingBox(XMFLOAT3(-5, 5, 0), XMFLOAT3(1, 1, 1));
+
+	auto mob_2 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	// boss transformations
+	XMStoreFloat4x4(&mob_2->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(5, 5, 0));
+	XMStoreFloat4x4(&mob_2->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	mobBox[1] = BoundingBox(XMFLOAT3(5, 5, 0), XMFLOAT3(1, 1, 1));
+
+	auto mob_3 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	// boss transformations
+	XMStoreFloat4x4(&mob_3->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, -5));
+	XMStoreFloat4x4(&mob_3->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	mobBox[2] = BoundingBox(XMFLOAT3(0, 5, -5), XMFLOAT3(1, 1, 1));
+
+	auto mob_4 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	// boss transformations
+	XMStoreFloat4x4(&mob_4->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, 5));
+	XMStoreFloat4x4(&mob_4->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	mobBox[3] = BoundingBox(XMFLOAT3(0, 5, 5), XMFLOAT3(1, 1, 1));
+	
+
+
 
 	// Ammo crate
 	{
@@ -1389,8 +1442,19 @@ void Application::BuildRenderItems()
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
 
+	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_1.get());
+	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_2.get());
+	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_3.get());
+	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_4.get());
+
 	// render items to all render items
 	mAllRitems.push_back(std::move(boss));
+	mAllRitems.push_back(std::move(mob_1));
+	mAllRitems.push_back(std::move(mob_2));
+	mAllRitems.push_back(std::move(mob_3));
+	mAllRitems.push_back(std::move(mob_4));
+	
+
 }
 
 /// <summary>
@@ -1523,13 +1587,13 @@ void Application::Shoot()
 
 		currentGun.Shoot();
 
-		XMFLOAT4X4 P = mCamera.GetProj4x4f();
+		XMFLOAT4X4 P = mCamera->GetProj4x4f();
 		float vx = (+2.0f * (mClientWidth / 2) / mClientWidth - 1.0f) / P(0, 0);
 		float vy = (-2.0f * (mClientHeight / 2) / mClientHeight + 1.0f) / P(1, 1);
 
 		XMVECTOR rayOrigin = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
 		XMVECTOR rayDir = XMVectorSet(vx, vy, 1.0f, 0.0f);
-		XMMATRIX V = mCamera.GetView();
+		XMMATRIX V = mCamera->GetView();
 		XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(V), V);
 
 		for (auto ri : mRitemLayer[(int)RenderLayer::Enemy])
@@ -1580,7 +1644,7 @@ void Application::CheckCameraCollision()
 		if (ri->shouldRender == false)
 			continue;
 
-		if(ammoBox[counter].Contains(mCamera.GetPosition()))
+		if(ammoBox[counter].Contains(mCamera->GetPosition()))
 		{
 			mGameAudio.Play("Pickup", nullptr, false, mAudioVolume, RandomPitchValue());
 
