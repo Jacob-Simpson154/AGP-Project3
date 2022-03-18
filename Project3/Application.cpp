@@ -736,6 +736,22 @@ void Application::BuildTerrainGeometry()
 // place after cb update
 void Application::UpdatePoints(const GameTimer& gt)
 {
+
+	for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
+	{
+		auto gpVB = mCurrFrameResource->GeoPointVB[vb].get();
+		size_t vertexCount = gc::NUM_GEO_POINTS[vb];
+
+		for (size_t v = 0; v < vertexCount; v++)
+		{
+			gpVB->CopyData(v, mGeoPoints.at(vb).at(v));
+		}
+
+		// updates ritems
+		mGeoPointsRitems[vb]->geometry->VertexBufferGPU = gpVB->Resource();
+		
+	}
+
 #if DYMANIC_VERTEX_SETUP
 
 	// makeshift update for vertices within geometry. 
@@ -757,6 +773,9 @@ void Application::UpdatePoints(const GameTimer& gt)
 	}
 
 	mPointsRitem->geometry->VertexBufferGPU = pointsVB->Resource();
+	
+#else
+
 
 #endif
 }
@@ -842,6 +861,62 @@ void Application::BuildGeometry()
 
 void Application::BuildPointsGeometry()
 {
+
+	// initialises correct number of points for each geometery point object
+	{
+
+		std::vector<std::uint16_t> indices;
+
+		for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
+		{
+			size_t vertexCount = gc::NUM_GEO_POINTS[vb];
+
+			mGeoPoints.at(vb).resize(vertexCount);
+			indices.resize(vertexCount);
+
+			assert(mGeoPoints.at(vb).size() < 0x0000ffff);
+
+			// todo remove when setup configured
+			for (size_t v = 0; v < vertexCount; v++)
+			{
+				Vector3 pos = Vector3(RandFloat(-50.0f, 50.0f), 0.0f, RandFloat(-50.0f, 50.0f));
+				mGeoPoints.at(vb).at(v).Pos = ApplyTerrainHeight(pos, terrainParam);
+				indices.at(v) = (uint16_t)v;
+			}
+
+			UINT vbByteSize = (UINT)vertexCount * sizeof(Point);
+			UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+
+			auto geo = std::make_unique<MeshGeometry>();
+			geo->Name = gc::GEO_POINT_NAME[vb].geoName;
+
+			geo->VertexBufferCPU = nullptr;
+			geo->VertexBufferGPU = nullptr;
+
+			// setup gpu index buffer
+			ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+			CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+			geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+				mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
+
+			geo->VertexByteStride = sizeof(Point);
+			geo->VertexBufferByteSize = vbByteSize;
+			geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+			geo->IndexBufferByteSize = ibByteSize;
+
+			SubmeshGeometry submesh;
+			submesh.IndexCount = (UINT)indices.size();
+			submesh.StartIndexLocation = 0;
+			submesh.BaseVertexLocation = 0;
+
+			geo->DrawArgs[gc::GEO_POINT_NAME[vb].subGeoName] = submesh;
+
+			mGeometries[geo->Name] = std::move(geo);
+		}
+	}
+
+
+
 
 #if	DYMANIC_VERTEX_SETUP
 	static const int pointCount = 16;
@@ -1100,8 +1175,17 @@ void Application::BuildFrameResources()
 {
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
-		mFrameResources.push_back(std::make_unique<FrameResource>(md3dDevice.Get(),
-			1, (UINT)mAllRitems.size(), (UINT)mMaterials.size(),(UINT)mPoints.vertexCount));
+		mFrameResources.push_back(std::make_unique<FrameResource>(
+			md3dDevice.Get(),
+			1, 
+			(UINT)mAllRitems.size(), 
+			(UINT)mMaterials.size(),
+			(UINT)mGeoPoints.at(GeoPointIndex::BOSS).size(), 
+			(UINT)mGeoPoints.at(GeoPointIndex::ENEMY).size(),
+			(UINT)mGeoPoints.at(GeoPointIndex::PARTICLE).size(),
+			(UINT)mGeoPoints.at(GeoPointIndex::SCENERY).size(),
+			(UINT)mPoints.vertexCount
+			));
 	}
 }
 
@@ -1363,6 +1447,26 @@ void Application::BuildRenderItems()
 
 #endif //UI_SPRITE_TOGGLE
 
+	{
+		// todo chage to appropriate render layer
+		RenderLayer gpRlayer[GeoPointIndex::COUNT]
+		{
+			RenderLayer::PointsGS,
+			RenderLayer::PointsGS,
+			RenderLayer::PointsGS,
+			RenderLayer::PointsGS
+		};
+
+		for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
+		{
+			auto ri = BuildRenderItem(objectCBIndex, gc::GEO_POINT_NAME[vb].geoName, gc::GEO_POINT_NAME[vb].subGeoName, "Tentacle", D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+			mGeoPointsRitems[vb] = ri.get();
+			mRitemLayer[(int)gpRlayer[vb]].push_back(ri.get());
+			mAllRitems.push_back(std::move(ri));
+		}
+	}
+
+
 	
 #if GS_TOGGLE
 	{
@@ -1374,7 +1478,6 @@ void Application::BuildRenderItems()
 	}
 
 #endif //GS_TOGGLE
-
 
 	// render items to layer
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());

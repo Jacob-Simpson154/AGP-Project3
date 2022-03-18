@@ -63,7 +63,7 @@ struct Vertex
 };
 
 // 
-enum  BillboardType : int {
+enum class BillboardType : int {
     NONE, 
     POINT_ORIENTATION,  // point at cam
     AXIS_ORIENTATION,   // point at cam about Y axis
@@ -77,7 +77,16 @@ struct Point
     DirectX::XMFLOAT3 Pos;
     DirectX::XMFLOAT2 Size;
     DirectX::XMFLOAT4 TexRect;
-    BillboardType BillboardType = BillboardType::NONE;
+    BillboardType Billboard = BillboardType::NONE;
+};
+
+enum GeoPointIndex
+{
+    BOSS,
+    ENEMY,
+    PARTICLE,
+    SCENERY,
+    COUNT
 };
 
 // Stores the resources needed for the CPU to build the command lists
@@ -85,8 +94,17 @@ struct Point
 struct FrameResource
 {
 public:
-    
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT pointsCount);
+    // todo remove pointsCOunt
+    FrameResource(
+        ID3D12Device* device, 
+        UINT passCount, 
+        UINT objectCount, 
+        UINT materialCount, 
+        UINT bossCount, 
+        UINT enemyCount, 
+        UINT particleCount, 
+        UINT sceneryCount, 
+        UINT pointsCount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -102,8 +120,11 @@ public:
 
 	std::unique_ptr<UploadBuffer<MaterialData>> MaterialBuffer = nullptr;
 
-    // geometery shader object
+    // geometery shader objects
     // pass data to this in app::update()
+    std::unique_ptr<UploadBuffer<Point>> GeoPointVB[GeoPointIndex::COUNT] = { nullptr,nullptr,nullptr,nullptr };
+
+    // todo remove pointsVB
     std::unique_ptr<UploadBuffer<Point>> PointsVB = nullptr;
 
     // Fence value to mark commands up to this fence point.  This lets us

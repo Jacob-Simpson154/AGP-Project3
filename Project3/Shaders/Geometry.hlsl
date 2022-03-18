@@ -148,6 +148,8 @@ void GS(point VertexOut gin[1],
         inout TriangleStream<VertexOut> triStream)
 {
     
+    
+    
     float x = 5.0f;
     float y = 20.0f;
     
@@ -211,7 +213,18 @@ float4 PS(VertexOut pin) : SV_Target
 
     // Common convention to take alpha from diffuse albedo.
     litColor.a = diffuseAlbedo.a;
-
+    
+    // todo remove
+    [branch]
+    switch (1)
+    {
+        case 0:
+            litColor.a = 0.0f;
+            break;
+    }
+    
+    
+    
     return litColor;
 }
 

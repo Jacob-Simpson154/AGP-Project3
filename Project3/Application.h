@@ -163,7 +163,7 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	std::vector< D3D12_INPUT_ELEMENT_DESC> mInputLayoutUi;
-	//todo rename
+	// for gs processing
 	std::vector< D3D12_INPUT_ELEMENT_DESC> mPointSpriteInputLayout;
 	PassConstants mMainPassCB;
 
@@ -179,12 +179,17 @@ private:
 	std::vector<RenderItem*> mRitemLayer[(int)RenderLayer::Count];
 	
 	// gs item
-	// dont think this needs to be dynamically created. Just needs vertexCount for GPU buffer
+	// must contain array of Point 
 	// TBC: could be enemy/boss/particle class... just needs vertex count (index count as well?)
 	GenericPointSomething mPoints;// std::unique_ptr<GenericPointSomething> mPoints;
+
+	std::array<std::vector<Point>, GeoPointIndex::COUNT> mGeoPoints;
 	// gs item
 	// build in BuildRenderItems (points topology)
 	// update appropriate VertexBufferGPU
+	std::array <RenderItem*, GeoPointIndex::COUNT> mGeoPointsRitems;
+
+	// todo remove
 	RenderItem* mPointsRitem = nullptr;
 
 	AudioSystem mGameAudio;
