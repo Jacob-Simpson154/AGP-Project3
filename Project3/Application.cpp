@@ -68,12 +68,11 @@ bool Application::Initialize()
 	// so we have to query this information.
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	mCamera.LookAt(
+	mCamera->LookAt(
 		XMFLOAT3(5.0f, 4.0f, -15.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f));
 
-	bossStats.Setup(0, 100);
 	currentGun.Setup("Pistol", 25, 7);
 	for (int i = 0; i < 4; i++)
 	{
@@ -96,7 +95,7 @@ bool Application::Initialize()
 
 
 
-	cameraBox = BoundingBox(mCamera.GetPosition3f(), XMFLOAT3(1, 1, 1));
+	cameraBox = BoundingBox(mCamera->GetPosition3f(), XMFLOAT3(1, 1, 1));
 	mCamera->LookAt(
 		XMFLOAT3(5.0f, 4.0f, -15.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f),
@@ -356,25 +355,25 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 
 	if (GetAsyncKeyState('W') & 0x8000)
 	{
-		mCamera.Walk(10.0f * dt);
+		mCamera->Walk(10.0f * dt);
 		isWalking = true;
 	}
 
 	if (GetAsyncKeyState('S') & 0x8000)
 	{
-		mCamera.Walk(-10.0f * dt);
+		mCamera->Walk(-10.0f * dt);
 		isWalking = true;
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
-		mCamera.Strafe(-10.0f * dt);
+		mCamera->Strafe(-10.0f * dt);
 		isWalking = true;
 	}
 
 	if (GetAsyncKeyState('D') & 0x8000)
 	{
-		mCamera.Strafe(10.0f * dt);
+		mCamera->Strafe(10.0f * dt);
 		isWalking = true;
 	}
 
@@ -1212,7 +1211,7 @@ void Application::BuildRenderItems()
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
 	bossBox = BoundingBox(position, scale);//神
-	bossBox = BoundingBox(XMFLOAT3(posX, posY, posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
+	//bossBox = BoundingBox(XMFLOAT3(posX, posY, posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
 
 	// Mobs
 	auto mob_1 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
@@ -1663,7 +1662,7 @@ void Application::CheckCameraCollision()
 		if (ri->shouldRender == false)
 			continue;
 
-		if (healthBox[counter].Contains(mCamera.GetPosition()))
+		if (healthBox[counter].Contains(mCamera->GetPosition()))
 		{
 			mGameAudio.Play("PickupHealth", nullptr, false, mAudioVolume, RandomPitchValue());
 
@@ -1767,9 +1766,9 @@ const UINT Application::GetCbvSrvDescriptorSize() const
 	return mCbvSrvDescriptorSize;
 }
 
-RenderItem::RenderItem()
-	:
-	NumFramesDirty(gNumFrameResources)
-{
-}
+//RenderItem::RenderItem()
+//	:
+//	NumFramesDirty(gNumFrameResources)
+//{
+//}
 

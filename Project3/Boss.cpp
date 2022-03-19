@@ -29,3 +29,9 @@ void Boss::Movement() {
 	tt += 0.01f;
 }
 
+void Boss::Pattern_1()
+{
+	XMFLOAT3 ft = playerObject->GetPosition3f();
+	//if(playerObject->GetPosition())
+}
+

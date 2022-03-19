@@ -14,6 +14,8 @@
 #include "Constants.h"
 #include "SpriteSystem.h" // screenspace sprites and text
 #include "HealthBox.h"
+#include "Mob.h"
+#include "RenderItemStruct.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -33,46 +35,46 @@ struct GenericPointSomething
 
 };
 
-struct RenderItem
-{
-	RenderItem();
-	RenderItem(const RenderItem& rhs) = delete;
-
-	/// <summary>
-	/// Controls visibility
-	/// </summary>
-	bool shouldRender = true;
-	/// <summary>
-	/// This items material
-	/// </summary>
-	Material* material = nullptr;
-	/// <summary>
-	/// This items geometry
-	/// </summary>
-	MeshGeometry* geometry = nullptr;
-	/// <summary>
-	/// Objects index, should increment 
-	/// per render item
-	/// </summary>
-	UINT objectCBIndex = -1;
-	/// <summary>
-	/// Position in world
-	/// </summary>
-	XMFLOAT4X4 position = MathHelper::Identity4x4();
-	XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
-
-	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
-	// Because we have an object cbuffer for each FrameResource, we have to apply the
-	// update to each FrameResource.  Thus, when we modify obect data we should set 
-	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
-	int NumFramesDirty;// = gNumFrameResources;
-	// Primitive topology.
-	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	// DrawIndexedInstanced parameters.
-	UINT IndexCount = 0;
-	UINT StartIndexLocation = 0;
-	int BaseVertexLocation = 0;
-};
+//struct RenderItem
+//{
+//	RenderItem();
+//	RenderItem(const RenderItem& rhs) = delete;
+//
+//	/// <summary>
+//	/// Controls visibility
+//	/// </summary>
+//	bool shouldRender = true;
+//	/// <summary>
+//	/// This items material
+//	/// </summary>
+//	Material* material = nullptr;
+//	/// <summary>
+//	/// This items geometry
+//	/// </summary>
+//	MeshGeometry* geometry = nullptr;
+//	/// <summary>
+//	/// Objects index, should increment 
+//	/// per render item
+//	/// </summary>
+//	UINT objectCBIndex = -1;
+//	/// <summary>
+//	/// Position in world
+//	/// </summary>
+//	XMFLOAT4X4 position = MathHelper::Identity4x4();
+//	XMFLOAT4X4 texTransform = MathHelper::Identity4x4();
+//
+//	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
+//	// Because we have an object cbuffer for each FrameResource, we have to apply the
+//	// update to each FrameResource.  Thus, when we modify obect data we should set 
+//	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
+//	int NumFramesDirty;// = gNumFrameResources;
+//	// Primitive topology.
+//	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+//	// DrawIndexedInstanced parameters.
+//	UINT IndexCount = 0;
+//	UINT StartIndexLocation = 0;
+//	int BaseVertexLocation = 0;
+//};
 
 enum class RenderLayer : int
 {
@@ -131,6 +133,7 @@ private:
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
+	void UpdateMovement();
 	void CheckCameraCollision();
 	void PlayFootAudio(float);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
@@ -168,7 +171,8 @@ private:
 	std::vector< D3D12_INPUT_ELEMENT_DESC> mPointSpriteInputLayout;
 	PassConstants mMainPassCB;
 
-	Camera mCamera;
+	Camera cam;
+	Camera* mCamera = &cam;
 
 	POINT mLastMousePos;
 
@@ -189,6 +193,7 @@ private:
 	AudioSystem mGameAudio;
 
 	BoundingBox bossBox;
+	BoundingBox mobBox[4];
 	BoundingBox ammoBox[4];
 	BoundingBox healthBox[4];
 	BoundingBox obstBox[gc::NUM_OBSTACLE];
@@ -197,6 +202,8 @@ private:
 	BoundingBox cameraBox;
 
 	Boss bossStats;
+	Mob mobStats;
+	std::vector<Mob> mobs;
 	Weapon currentGun;
 	TerrainParams terrainParam;
 	UICharLine pointsDisplay;

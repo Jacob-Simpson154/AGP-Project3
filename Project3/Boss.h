@@ -8,6 +8,7 @@ public:
 	~Boss();
 	void Setup(RenderItem* geo, Camera* player);
 	void Enemy::Movement();
+	void Pattern_1();
 	//void Enemy::Setup(int stage, int health, RenderItem* geo);
 	/*void UpdateMovement();*/
 private:
