@@ -79,6 +79,7 @@ bool Application::Initialize()
 		ammoBoxClass[i] = AmmoBox(10 * i);
 		healthBoxClass[i] = HealthBox(10 * i);
 		shieldPowerupClass[i] = ShieldPowerup(30);
+		speedPowerupClass[i] = SpeedPowerup(60, 3);
 	}
 
 
@@ -216,6 +217,17 @@ void Application::Update(const GameTimer& gt)
 
 		checkIndex++;
 	}
+	checkIndex = 0;
+	for (auto ri : mRitemLayer[(int)RenderLayer::SpeedPowerup])
+	{
+		speedPowerupClass[checkIndex].Update(gt.DeltaTime());
+		if (speedPowerupClass[checkIndex].hasBeenConsumed == false)
+		{
+			ri->shouldRender = true;
+		}
+
+		checkIndex++;
+	}
 }
 
 /// <summary>
@@ -269,6 +281,7 @@ void Application::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::HealthBox]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::ShieldPowerup]);
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::SpeedPowerup]);
 
 	mCommandList->OMSetStencilRef(0);
 
@@ -1178,6 +1191,7 @@ void Application::BuildMaterials()
 	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
 	BuildMaterial(0, "Orange", 0.0f, XMFLOAT4(.9f, 0.5f, 0.2f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f)); //Temp Shield Texture
+	BuildMaterial(0, "Purple", 0.0f, XMFLOAT4(.45f, 0.1f, 0.6f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f)); //Temp Speed Texture
 
 
 	// MATT TEXTURE STUFF
@@ -1305,11 +1319,29 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto shieldCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Orange"); //\[T]/ Change Colour Here
+			auto shieldCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Orange");
 			XMStoreFloat4x4(&shieldCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			shieldPowerup[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::ShieldPowerup].emplace_back(shieldCrate.get());
 			mAllRitems.push_back(std::move(shieldCrate));
+		}
+
+
+		// Speed Powerup
+		for (size_t i = 0; i < 4; i++)
+		{
+			position.x = sin((float)i) * RandFloat(10.0f, 20.0f);
+			position.z = cos((float)i) * RandFloat(10.0f, 20.0f);
+
+			// slight inset into terrain
+			position = ApplyTerrainHeight(position, terrainParam);
+			position.y += 0.8f;
+
+			auto speedCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Purple"); //\[T]/ Change Colour Here
+			XMStoreFloat4x4(&speedCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
+			speedPowerup[i] = BoundingBox(position, scale);
+			mRitemLayer[(int)RenderLayer::SpeedPowerup].emplace_back(speedCrate.get());
+			mAllRitems.push_back(std::move(speedCrate));
 		}
 	}
 
@@ -1722,8 +1754,28 @@ void Application::CheckCameraCollision()
 
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
-			//Should Apply Shield For Around 30 seconds
+			//Should Apply Shield For Around 30 Seconds
 			shieldPowerupClass[counter].Consume();
+		}
+	}
+
+	counter = -1;
+	for (auto ri : mRitemLayer[(int)RenderLayer::SpeedPowerup])
+	{
+		counter++;
+
+		auto geo = ri->geometry;
+		if (ri->shouldRender == false)
+			continue;
+
+		if (speedPowerup[counter].Contains(mCamera->GetPosition()))
+		{
+			mGameAudio.Play("PickupHealth", nullptr, false, mAudioVolume, RandomPitchValue());
+
+			ri->shouldRender = false;
+			ri->NumFramesDirty = gNumFrameResources;
+			//Should Apply 3xSpeed For Around 30 Seconds
+			speedPowerupClass[counter].Consume();
 		}
 	}
 }

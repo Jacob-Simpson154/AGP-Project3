@@ -28,6 +28,7 @@
     <ClCompile Include="TimerInterval.cpp" />
     <ClCompile Include="Weapon.cpp" />
     <ClCompile Include="ShieldPowerup.cpp" />
+    <ClCompile Include="SpeedPowerup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Camera.h" />
@@ -56,5 +57,6 @@
     <ClInclude Include="RenderItemStruct.h" />
     <ClInclude Include="Weapon.h" />
     <ClInclude Include="ShieldPowerup.h" />
+    <ClInclude Include="SpeedPowerup.h" />
   </ItemGroup>
 </Project>

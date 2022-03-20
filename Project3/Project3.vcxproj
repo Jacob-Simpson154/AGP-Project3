@@ -163,6 +163,7 @@
     <ClCompile Include="Mob.cpp" />
     <ClCompile Include="ReadMe.cpp" />
     <ClCompile Include="ShieldPowerup.cpp" />
+    <ClCompile Include="SpeedPowerup.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="TimerInterval.cpp" />
@@ -187,6 +188,7 @@
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="HealthBox.h" />
     <ClInclude Include="ShieldPowerup.h" />
+    <ClInclude Include="SpeedPowerup.h" />
     <ClInclude Include="SpriteSystem.h" />
     <ClInclude Include="TimerInterval.h" />
     <ClInclude Include="Terrain.h" />
