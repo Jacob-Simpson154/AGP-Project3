@@ -16,6 +16,7 @@
 #include "HealthBox.h"
 #include "Mob.h"
 #include "RenderItemStruct.h"
+#include "ShieldPowerup.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -82,6 +83,7 @@ enum class RenderLayer : int
 	Enemy,
 	AmmoBox,
 	HealthBox,
+	ShieldPowerup,
 	UI,
 	PointsGS,
 	Count
@@ -196,9 +198,11 @@ private:
 	BoundingBox mobBox[4];
 	BoundingBox ammoBox[4];
 	BoundingBox healthBox[4];
+	BoundingBox shieldPowerup[4];
 	BoundingBox obstBox[gc::NUM_OBSTACLE];
 	AmmoBox ammoBoxClass[4];
 	HealthBox healthBoxClass[4];
+	ShieldPowerup shieldPowerupClass[4];
 	BoundingBox cameraBox;
 
 	Boss bossStats;

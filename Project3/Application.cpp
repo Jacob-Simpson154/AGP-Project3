@@ -78,6 +78,7 @@ bool Application::Initialize()
 	{
 		ammoBoxClass[i] = AmmoBox(10 * i);
 		healthBoxClass[i] = HealthBox(10 * i);
+		shieldPowerupClass[i] = ShieldPowerup();
 	}
 
 
@@ -204,6 +205,17 @@ void Application::Update(const GameTimer& gt)
 
 		checkIndex++;
 	}
+	checkIndex = 0;
+	for (auto ri : mRitemLayer[(int)RenderLayer::ShieldPowerup])
+	{
+		shieldPowerupClass[checkIndex].Update(gt.DeltaTime());
+		if (shieldPowerupClass[checkIndex].hasBeenConsumed == false)
+		{
+			ri->shouldRender = true;
+		}
+
+		checkIndex++;
+	}
 }
 
 /// <summary>
@@ -256,6 +268,7 @@ void Application::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::HealthBox]);
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::ShieldPowerup]);
 
 	mCommandList->OMSetStencilRef(0);
 
@@ -1164,6 +1177,8 @@ void Application::BuildMaterials()
 	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+	BuildMaterial(0, "Orange", 0.0f, XMFLOAT4(.9f, 0.5f, 0.2f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+
 
 	// MATT TEXTURE STUFF
 	BuildMaterial(1, "Tentacle", 0.25f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.1f, 0.1f, 0.1f));
@@ -1262,6 +1277,7 @@ void Application::BuildRenderItems()
 			mAllRitems.push_back(std::move(ammoCrate));
 		}
 		
+		// Health Crate
 		for (size_t i = 0; i < 4; i++)
 		{
 			position.x = sin((float)i) * RandFloat(10.0f,20.0f);
@@ -1276,6 +1292,24 @@ void Application::BuildRenderItems()
 			healthBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::HealthBox].emplace_back(healthCrate.get());
 			mAllRitems.push_back(std::move(healthCrate));
+		}
+
+
+		// Shield Powerup
+		for (size_t i = 0; i < 4; i++)
+		{
+			position.x = sin((float)i) * RandFloat(10.0f, 20.0f);
+			position.z = cos((float)i) * RandFloat(10.0f, 20.0f);
+
+			// slight inset into terrain
+			position = ApplyTerrainHeight(position, terrainParam);
+			position.y += 0.8f;
+
+			auto shieldPowerup = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Orange"); //\[T]/ Change Colour Here
+			XMStoreFloat4x4(&shieldPowerup->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
+			ammoBox[i] = BoundingBox(position, scale);
+			mRitemLayer[(int)RenderLayer::ShieldPowerup].emplace_back(shieldPowerup.get());
+			mAllRitems.push_back(std::move(shieldPowerup));
 		}
 	}
 
@@ -1673,6 +1707,25 @@ void Application::CheckCameraCollision()
 		}
 	}
 
+	counter = -1;
+	for (auto ri : mRitemLayer[(int)RenderLayer::ShieldPowerup])
+	{
+		counter++;
+
+		auto geo = ri->geometry;
+		if (ri->shouldRender == false)
+			continue;
+
+		if (shieldPowerup[counter].Contains(mCamera->GetPosition()))
+		{
+			mGameAudio.Play("PickupHealth", nullptr, false, mAudioVolume, RandomPitchValue());
+
+			ri->shouldRender = false;
+			ri->NumFramesDirty = gNumFrameResources;
+			//Heal - feed the below get to a health class
+			shieldPowerupClass[counter].Consume();
+		}
+	}
 }
 
 void Application::PlayFootAudio(float dt)
