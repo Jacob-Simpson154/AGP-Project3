@@ -78,7 +78,7 @@ bool Application::Initialize()
 	{
 		ammoBoxClass[i] = AmmoBox(10 * i);
 		healthBoxClass[i] = HealthBox(10 * i);
-		shieldPowerupClass[i] = ShieldPowerup();
+		shieldPowerupClass[i] = ShieldPowerup(30);
 	}
 
 
@@ -1177,7 +1177,7 @@ void Application::BuildMaterials()
 	BuildMaterial(0, "Grey", 0.0f, XMFLOAT4(0.7f, 0.7f, 0.7f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Black", 0.0f, XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f), XMFLOAT3(0.04f, 0.04f, 0.04f));
 	BuildMaterial(0, "Red", 0.0f, XMFLOAT4(1.0f, 0.0f, 0.0f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
-	BuildMaterial(0, "Orange", 0.0f, XMFLOAT4(.9f, 0.5f, 0.2f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f));
+	BuildMaterial(0, "Orange", 0.0f, XMFLOAT4(.9f, 0.5f, 0.2f, 0.6f), XMFLOAT3(0.06f, 0.06f, 0.06f)); //Temp Shield Texture
 
 
 	// MATT TEXTURE STUFF
@@ -1305,11 +1305,11 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto shieldPowerup = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Orange"); //\[T]/ Change Colour Here
-			XMStoreFloat4x4(&shieldPowerup->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
-			ammoBox[i] = BoundingBox(position, scale);
-			mRitemLayer[(int)RenderLayer::ShieldPowerup].emplace_back(shieldPowerup.get());
-			mAllRitems.push_back(std::move(shieldPowerup));
+			auto shieldCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Orange"); //\[T]/ Change Colour Here
+			XMStoreFloat4x4(&shieldCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
+			shieldPowerup[i] = BoundingBox(position, scale);
+			mRitemLayer[(int)RenderLayer::ShieldPowerup].emplace_back(shieldCrate.get());
+			mAllRitems.push_back(std::move(shieldCrate));
 		}
 	}
 
@@ -1722,7 +1722,7 @@ void Application::CheckCameraCollision()
 
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
-			//Heal - feed the below get to a health class
+			//Should Apply Shield For Around 30 seconds
 			shieldPowerupClass[counter].Consume();
 		}
 	}
