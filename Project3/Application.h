@@ -23,6 +23,10 @@ typedef DirectX::SimpleMath::Vector3 Vector3;
 
 typedef DirectX::SimpleMath::Matrix Matrix;
 
+
+#define TERRAIN_SHADER_TOGGLE 1
+
+
 // boss/ enemy/ particle 
 // todo rename or remove (when appropriate)
 struct GenericPointSomething

@@ -14,6 +14,43 @@ struct ObjectConstants
 	UINT     ObjPad2;
 };
 
+struct Shockwave
+{
+    // origin
+    DirectX::XMFLOAT3 Pos = {0.0f,0.0f,0.0f};
+    // from pos. rig to timer
+    float Raduis = 0.0f;
+    // from radius
+    float Width = 5.0f;
+    // on normal
+    float Strength = 2.0f;
+    // radius multiplier
+    float Speed = 20.0f;
+    // speed and strength
+    float Drag = 0.9999999f;
+
+    void Update(float dt)
+    {
+        Raduis += Speed * dt;
+    }
+    void Stop()
+    {
+        Raduis = 0.0f;
+        Strength = 0.0f;
+        Width = 0.0f;
+        Speed = 0.0f;
+    }
+    void Reset(DirectX::XMFLOAT3 pos, float strength = 2.0f,float speed = 20.0f, float width = 5.0f, float drag = 0.99f)
+    {
+        Raduis = 0.0f;
+        Pos = pos;
+        Strength = strength;
+        Width = width;
+        Speed = speed;
+        Drag = max(min(drag,1.0f),0.0f);
+    }
+};
+
 struct PassConstants
 {
     DirectX::XMFLOAT4X4 View = MathHelper::Identity4x4();
@@ -43,6 +80,12 @@ struct PassConstants
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light Lights[MaxLights];
+
+    // 96 remaining 4byte elements. removed 8 lights. 8*sizeof(Light) == 8 * 12 == 96
+    Shockwave Shockwaves[1];
+
+    // 96 - sizeof(Light) == 88
+    float Padding[88]; // 
 };
 
 struct MaterialData
