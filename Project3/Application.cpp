@@ -93,8 +93,6 @@ bool Application::Initialize()
 	BuildFrameResources();
 	BuildPSOs();
 
-	
-
 	cameraBox = BoundingBox(mCamera->GetPosition3f(), XMFLOAT3(1, 1, 1));
 	mCamera->LookAt(
 		XMFLOAT3(5.0f, 4.0f, -15.0f),
@@ -1665,11 +1663,6 @@ void Application::Shoot()
 void Application::CheckCameraCollision()
 {
 	int counter = -1;
-
-	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
-
-	position.y = position.y * 0.5f;
-	float cpos = position.y;
 
 	XMVECTOR C = mCamera->GetPosition();
 	

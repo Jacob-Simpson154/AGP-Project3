@@ -155,7 +155,8 @@ void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3&
 
 XMMATRIX Camera::GetView()const
 {
-	assert(!mViewDirty);
+	//TODO: Check if this is necessary
+	//assert(!mViewDirty);
 	return XMLoadFloat4x4(&mView);
 }
 
@@ -167,7 +168,8 @@ XMMATRIX Camera::GetProj()const
 
 XMFLOAT4X4 Camera::GetView4x4f()const
 {
-	assert(!mViewDirty);
+	//TODO: Check if this is necessary
+	//assert(!mViewDirty);
 	return mView;
 }
 
