@@ -26,12 +26,19 @@ void Boss::Setup(RenderItem* geo, Camera* player)
 void Boss::Movement() {
 	XMStoreFloat4x4(&geoObject->position, XMMatrixTranslation(posX, posY + tt, posZ));
 	geoObject->NumFramesDirty = gNumFrameResources;
-	tt += 0.01f;
+	tt += 0.0f;
+	Pattern_1();
 }
 
 void Boss::Pattern_1()
 {
-	XMFLOAT3 ft = playerObject->GetPosition3f();
-	//if(playerObject->GetPosition())
+	XMFLOAT3 playerPos = playerObject->GetPosition3f();
+	XMFLOAT3 bossPos = XMFLOAT3(geoObject->position._41, geoObject->position._42, geoObject->position._43);
+
+	//d = ((x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2) * 0.5      
+
+	float playerToBoss = (((int)(bossPos.x - playerPos.x) ^ 2) + ((int)(bossPos.y - playerPos.y) ^ 2) + ((int)(bossPos.z - playerPos.z) ^ 2)) * 0.5f;
+	
+	if (playerToBoss <= 2) tt += 1;
 }
 
