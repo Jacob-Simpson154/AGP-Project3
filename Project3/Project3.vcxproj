@@ -162,6 +162,7 @@
     <ClCompile Include="HealthBox.cpp" />
     <ClCompile Include="Mob.cpp" />
     <ClCompile Include="ReadMe.cpp" />
+    <ClCompile Include="Sprint.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="Terrain.cpp" />
     <ClCompile Include="TimerInterval.cpp" />
@@ -185,12 +186,12 @@
     <ClInclude Include="Constants.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="HealthBox.h" />
+    <ClInclude Include="Sprint.h" />
     <ClInclude Include="SpriteSystem.h" />
     <ClInclude Include="TimerInterval.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="Enemy.h" />
-
     <ClInclude Include="Mob.h" />
     <ClInclude Include="RenderItemStruct.h" />
     <ClInclude Include="Weapon.h" />

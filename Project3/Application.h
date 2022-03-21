@@ -16,6 +16,7 @@
 #include "HealthBox.h"
 #include "Mob.h"
 #include "RenderItemStruct.h"
+#include "Sprint.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;

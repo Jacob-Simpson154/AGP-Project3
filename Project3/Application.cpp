@@ -93,7 +93,7 @@ bool Application::Initialize()
 	BuildFrameResources();
 	BuildPSOs();
 
-
+	
 
 	cameraBox = BoundingBox(mCamera->GetPosition3f(), XMFLOAT3(1, 1, 1));
 	mCamera->LookAt(
@@ -352,28 +352,34 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
 	bool isWalking = false;
+	const float speed = 1.0f;
+
+	if (GetAsyncKeyState(VK_LSHIFT) & 0x8000)
+	{
+		
+	}
 
 	if (GetAsyncKeyState('W') & 0x8000)
 	{
-		mCamera->Walk(10.0f * dt);
+		mCamera->Walk(10.0f * dt * speed);
 		isWalking = true;
 	}
 
 	if (GetAsyncKeyState('S') & 0x8000)
 	{
-		mCamera->Walk(-10.0f * dt);
+		mCamera->Walk(-10.0f * dt * speed);
 		isWalking = true;
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
-		mCamera->Strafe(-10.0f * dt);
+		mCamera->Strafe(-10.0f * dt * speed);
 		isWalking = true;
 	}
 
 	if (GetAsyncKeyState('D') & 0x8000)
 	{
-		mCamera->Strafe(10.0f * dt);
+		mCamera->Strafe(10.0f * dt * speed);
 		isWalking = true;
 	}
 
