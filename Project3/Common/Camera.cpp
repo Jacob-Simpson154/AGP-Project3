@@ -183,7 +183,7 @@ void Camera::Strafe(float d)
 	XMVECTOR r = XMLoadFloat3(&mRight);
 	XMVECTOR p = XMLoadFloat3(&mPosition);
 	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, r, p));
-
+	ClampPosition();
 	mViewDirty = true;
 }
 
@@ -194,8 +194,33 @@ void Camera::Walk(float d)
 	XMVECTOR l = XMLoadFloat3(&mLook);
 	XMVECTOR p = XMLoadFloat3(&mPosition);
 	XMStoreFloat3(&mPosition, XMVectorMultiplyAdd(s, l, p));
-
+	ClampPosition();
 	mViewDirty = true;
+}
+
+void Camera::ClampPosition()
+{
+	float borderBuffer = 5.0f;
+
+	if (mPosition.x > 100 - borderBuffer)
+	{
+		mPosition.x = 100-borderBuffer;
+	}
+
+	if (mPosition.x < -100 + borderBuffer)
+	{
+		mPosition.x = -100 + borderBuffer;
+	}
+
+	if (mPosition.z > 100 - borderBuffer)
+	{
+		mPosition.z = 100 - borderBuffer;
+	}
+
+	if (mPosition.z < -100 + borderBuffer)
+	{
+		mPosition.z = -100 + borderBuffer;
+	}
 }
 
 void Camera::Pitch(float angle)

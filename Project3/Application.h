@@ -81,6 +81,7 @@ enum class RenderLayer : int
 {
 	World = 0,
 	Enemy,
+	AlphaClipped,
 	AmmoBox,
 	HealthBox,
 	UI,

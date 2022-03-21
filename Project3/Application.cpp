@@ -261,6 +261,7 @@ void Application::Draw(const GameTimer& gt)
 
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Enemy]);
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AlphaClipped]);
 
 	mCommandList->SetPipelineState(mPSOs["ui"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::UI]);
@@ -526,6 +527,7 @@ void Application::LoadTextures()
 	LoadTexture(L"Data/Textures/Tentacle.dds", "tempTex");
 	LoadTexture(L"Data/Textures/obstacle.dds", "houseTex");
 	LoadTexture(L"Data/Textures/terrain.dds", "terrainTex");
+	LoadTexture(L"Data/Textures/WireFence.dds", "fenceTex");
 	LoadTexture(L"Data/Textures/ui.dds", "uiTex");
 }
 
@@ -629,7 +631,7 @@ void Application::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 5; // includes font sprites
+	srvHeapDesc.NumDescriptors = 6; // includes font sprites
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -649,6 +651,8 @@ void Application::BuildDescriptorHeaps()
 	CreateSRV("terrainTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	CreateSRV("uiTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);	
+	CreateSRV("fenceTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 }
 
@@ -1176,6 +1180,7 @@ void Application::BuildMaterials()
 	BuildMaterial(2, "HouseMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	BuildMaterial(3, "TerrainMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	BuildMaterial(4, "uiMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(5, "FenceMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
 }
 
@@ -1244,9 +1249,29 @@ void Application::BuildRenderItems()
 	XMStoreFloat4x4(&mob_4->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
 	mobBox[3] = BoundingBox(XMFLOAT3(0, 5, 5), XMFLOAT3(1, 1, 1));
 	
-
-
-
+	//Border visual (temp)
+	{
+		auto border_01 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "FenceMat");
+		XMStoreFloat4x4(&border_01->position, XMMatrixScaling(.1f, 10, 200) * XMMatrixTranslation(100, 0, 0));
+		XMStoreFloat4x4(&border_01->texTransform, XMMatrixScaling(200.0f, 10.0f, 1.0f));
+		mRitemLayer[(int)RenderLayer::AlphaClipped].emplace_back(border_01.get());
+		mAllRitems.push_back(std::move(border_01));
+		auto border_02 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "FenceMat");
+		XMStoreFloat4x4(&border_02->position, XMMatrixScaling(.1f, 10, 200) * XMMatrixTranslation(-100, 0, 0));
+		XMStoreFloat4x4(&border_02->texTransform, XMMatrixScaling(200.0f, 10.0f, 1.0f));
+		mRitemLayer[(int)RenderLayer::AlphaClipped].emplace_back(border_02.get());
+		mAllRitems.push_back(std::move(border_02));
+		auto border_03 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "FenceMat");
+		XMStoreFloat4x4(&border_03->position, XMMatrixScaling(200, 10, .1f) * XMMatrixTranslation(0, 0, 100));
+		XMStoreFloat4x4(&border_03->texTransform, XMMatrixScaling(200.0f, 10.0f, 1.0f));
+		mRitemLayer[(int)RenderLayer::AlphaClipped].emplace_back(border_03.get());
+		mAllRitems.push_back(std::move(border_03));
+		auto border_04 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "FenceMat");
+		XMStoreFloat4x4(&border_04->position, XMMatrixScaling(200, 10, .1f) * XMMatrixTranslation(0, 0, -100));
+		XMStoreFloat4x4(&border_04->texTransform, XMMatrixScaling(200.0f, 10.0f, 1.0f));
+		mRitemLayer[(int)RenderLayer::AlphaClipped].emplace_back(border_04.get());
+		mAllRitems.push_back(std::move(border_04));
+	}
 	// Ammo crate
 	{
 		// set scale for ammo
