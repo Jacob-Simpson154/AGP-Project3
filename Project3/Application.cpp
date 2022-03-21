@@ -1635,6 +1635,20 @@ void Application::CheckCameraCollision()
 {
 	int counter = -1;
 
+	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
+
+	position.y = position.y * 0.5f;
+	float cpos = position.y;
+
+	XMVECTOR C = mCamera->GetPosition();
+	
+	float cX = XMVectorGetX(C);
+	float cY = XMVectorGetY(C);
+	float cZ = XMVectorGetZ(C);
+
+	mCamera->SetPosition(cX, cpos, cZ);
+
+
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
 	{
 		counter++;
@@ -1672,6 +1686,8 @@ void Application::CheckCameraCollision()
 			healthBoxClass[counter].Consume();
 		}
 	}
+
+
 
 }
 

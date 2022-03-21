@@ -28,7 +28,7 @@ XMFLOAT3 Camera::GetPosition3f()const
 void Camera::SetPosition(float x, float y, float z)
 {
 	mPosition = XMFLOAT3(x, y, z);
-	mViewDirty = true;
+	//mViewDirty = true;
 }
 
 void Camera::SetPosition(const XMFLOAT3& v)
