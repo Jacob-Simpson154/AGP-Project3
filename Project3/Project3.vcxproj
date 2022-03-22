@@ -161,6 +161,7 @@
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="HealthBox.cpp" />
     <ClCompile Include="Mob.cpp" />
+    <ClCompile Include="ParticleCtrl.cpp" />
     <ClCompile Include="ReadMe.cpp" />
     <ClCompile Include="Sprint.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="Constants.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="HealthBox.h" />
+    <ClInclude Include="ParticleCtrl.h" />
     <ClInclude Include="Sprint.h" />
     <ClInclude Include="SpriteSystem.h" />
     <ClInclude Include="TimerInterval.h" />

@@ -17,6 +17,7 @@
 #include "Mob.h"
 #include "RenderItemStruct.h"
 #include "Sprint.h"
+#include "ParticleCtrl.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -308,4 +309,5 @@ private:
 	Stat bossHealth;
 
 	Countdown countdown;
+	ParticleSys particleCtrl;
 };

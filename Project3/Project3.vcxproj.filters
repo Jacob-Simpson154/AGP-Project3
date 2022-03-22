@@ -81,6 +81,9 @@
     <ClCompile Include="Weapon.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="ParticleCtrl.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AmmoBox.h">
@@ -156,6 +159,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="Constants.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleCtrl.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

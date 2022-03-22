@@ -80,7 +80,6 @@ bool Application::Initialize()
 		healthBoxClass[i] = HealthBox(10 * i);
 	}
 
-
 	BuildAudio();
 	LoadTextures();
 	BuildRootSignature();
@@ -165,7 +164,7 @@ void Application::Update(const GameTimer& gt)
 	playerStamina.Update(gt);
 	bossHealth.Update(gt);
 
-
+	particleCtrl.Update(&mGeoPoints.at(GeoPointIndex::PARTICLE), gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_HEALTH_PLAYER_GRN].SetXScale(this,playerHealth.Normalise(),gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this,bossHealth.Normalise(),gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,playerStamina.Normalise(),gt.DeltaTime());
@@ -322,6 +321,8 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	if ((btnState & MK_LBUTTON) != 0)
 	{
 		Shoot();
+		particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], mCamera->GetPosition3f(),5.0f);
+
 		mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
 
 		if (tempCurrentHealth > 0.0f)
@@ -966,6 +967,9 @@ void Application::BuildPointsGeometry()
 
 			mGeometries[geo->Name] = std::move(geo);
 		}
+
+		particleCtrl.Init(mGeoPoints.at(GeoPointIndex::PARTICLE).size(), 10);
+
 	}
 }
 
@@ -1492,6 +1496,9 @@ void Application::BuildRenderItems()
 			mRitemLayer[(int)gpRlayer[vb]].push_back(ri.get());
 			mAllRitems.push_back(std::move(ri));
 		}
+
+		
+
 	}
 
 	// render items to layer
