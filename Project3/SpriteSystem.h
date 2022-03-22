@@ -51,6 +51,8 @@ public:
 	void Init(Application* const app, uint32_t ritemOffset, const DirectX::SimpleMath::Vector3& pos, bool visible = true, const DirectX::SimpleMath::Vector3& uvw = DirectX::SimpleMath::Vector3::Zero);
 	// call before UpdateObjectBuffer
 	void SetDisplay(Application* const app, bool display);
+
+	void SetXScale(Application* const app, float scale, float dt);
 	
 };
 

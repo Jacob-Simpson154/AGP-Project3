@@ -147,29 +147,39 @@ void Application::Update(const GameTimer& gt)
 		CloseHandle(eventHandle);
 	}
 
+
+	if (!playerHealth.AboveZero())
+	{
+		spriteCtrl[gc::SPRITE_LOSE].SetDisplay(this, true);
+		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
+	}
+	if (!bossHealth.AboveZero())
+	{
+		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, false);
+		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
+	}
+
 	playerHealth.Update(gt);
 	playerStamina.Update(gt);
 	bossHealth.Update(gt);
 
+
+	spriteCtrl[gc::SPRITE_HEALTH_PLAYER_GRN].SetXScale(this,playerHealth.Normalise(),gt.DeltaTime());
+	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this,bossHealth.Normalise(),gt.DeltaTime());
+	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,playerStamina.Normalise(),gt.DeltaTime());
 
 	// todo pass in appropriate values (positive floats only)
 	pointsDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
 	timeDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
 	ammoDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
 
-	// todo: place in appropriate logic
-	if (gt.TotalTime() > 2.0f)
+	// hides objective sprite after set time
+	if (gt.TotalTime() > 5.0f)
 	{
-		spriteCtrl[gc::SPRITE_LOSE].SetDisplay(this, false);
 		spriteCtrl[gc::SPRITE_OBJECTIVE].SetDisplay(this, false);
-		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, false);
 	}
 
-	// todo: place in appropriate logic
-	for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
-	{
-		wordCtrl[i].SetDisplay(this, (float)i * 2 < gt.TotalTime());
-	}
+
 
 	mGameAudio.Update(mTimer.DeltaTime(), mCamera->GetPosition3f(), mCamera->GetLook3f(), mCamera->GetUp3f());
 
@@ -1364,7 +1374,7 @@ void Application::BuildRenderItems()
 		mRitemLayer[(int)RenderLayer::UI].emplace_back(ui.get());
 		mAllRitems.push_back(std::move(ui));
 
-		spriteCtrl[i].Init(this, offset++, gc::UI_SPRITE_DATA[i].position, true);
+		spriteCtrl[i].Init(this, offset++, gc::UI_SPRITE_DATA[i].position, gc::UI_SPRITE_DEFAULT_DISPLAY[i]);
 	}
 
 	// char lines sprites
@@ -1428,7 +1438,7 @@ void Application::BuildRenderItems()
 			mAllRitems.push_back(std::move(uiChar));
 		}
 
-		ammoDisplay.Init(this, offset, gc::UI_LINE_3_LEN, gc::UI_AMMO_POS, gc::CHAR_COLON, gc::CHAR_SPC, 0);
+		ammoDisplay.Init(this, offset, gc::UI_LINE_3_LEN, gc::UI_AMMO_POS, gc::CHAR_AMM0, gc::CHAR_SPC, 0);
 
 	}
 
@@ -1443,8 +1453,8 @@ void Application::BuildRenderItems()
 			// todo define init word pos in constants.h
 			// todo creates pointers to word ritem 
 			
-			Vector3 tempPos = Vector3::Zero;
-			tempPos.y += 0.06f * (float)i;
+			//Vector3 tempPos = Vector3::Zero;
+			//tempPos.y += 0.06f * (float)i;
 
 			Vector3 tempUVW = Vector2::Zero;
 			tempUVW.y += gc::UI_WORD_INC * (float)i;
@@ -1455,7 +1465,7 @@ void Application::BuildRenderItems()
 			mRitemLayer[(int)RenderLayer::UI].emplace_back(uiWord.get());
 			mAllRitems.push_back(std::move(uiWord));
 
-			wordCtrl[i].Init(this, offset++, gc::UI_WORD.position + tempPos, true, tempUVW);
+			wordCtrl[i].Init(this, offset++, gc::UI_WORD_INIT_POSITION[i], true, tempUVW);
 
 		}
 
