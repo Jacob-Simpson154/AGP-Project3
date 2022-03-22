@@ -30,15 +30,7 @@ typedef DirectX::SimpleMath::Matrix Matrix;
 #define TERRAIN_SHADER_TOGGLE 1
 
 
-// boss/ enemy/ particle 
-// todo rename or remove (when appropriate)
-struct GenericPointSomething
-{
-	// ideally const set from constants.h
-	uint32_t vertexCount = 0;
-	std::vector<Point> vData;
 
-};
 
 //struct RenderItem
 //{
@@ -81,6 +73,57 @@ struct GenericPointSomething
 //	int BaseVertexLocation = 0;
 //};
 
+enum class GameplayState : uint32_t
+{
+	Start,
+	Playing,
+	Win,
+	Lose
+};
+
+// used for health and stamina
+struct Stat
+{
+	const float maximum = 100.0f;
+	float current = 100.0f;
+
+	bool AboveZero()
+	{
+		return current > 0.0f;
+	}
+
+	float Normalise()
+	{
+		Clamp();
+		return current / maximum;
+	}
+
+	Stat() = default;
+	Stat(float maxValue)
+		:
+		maximum(maxValue),
+		current(maxValue)
+	{
+
+	}
+	// keep within limits
+	void Clamp()
+	{
+		if (current > maximum)
+		{
+			current = maximum;
+		} 
+		else if (current < 0.0f)
+		{
+			current = 0.0f;
+		}
+	}
+
+	void Update(const GameTimer& gt)
+	{
+		Clamp();
+	}
+};
 enum class RenderLayer : int
 {
 	World = 0,
@@ -226,4 +269,13 @@ private:
 	float mAudioVolume = 0.3f;
 	float footStepTimer = 0.0f;
 	float footStepInterval = 0.4f;
+	
+	GameplayState gameplayState = GameplayState::Start;
+
+	float tempMaxHealth = 100.0f;
+	float tempCurrentHealth = 100.0f;
+
+	Stat playerHealth;
+	Stat playerStamina;
+	Stat bossHealth;
 };

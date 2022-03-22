@@ -147,6 +147,11 @@ void Application::Update(const GameTimer& gt)
 		CloseHandle(eventHandle);
 	}
 
+	playerHealth.Update(gt);
+	playerStamina.Update(gt);
+	bossHealth.Update(gt);
+
+
 	// todo pass in appropriate values (positive floats only)
 	pointsDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
 	timeDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
@@ -307,6 +312,11 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	{
 		Shoot();
 		mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
+
+		if (tempCurrentHealth > 0.0f)
+		{
+			gameplayState = GameplayState::Playing;
+		}
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
