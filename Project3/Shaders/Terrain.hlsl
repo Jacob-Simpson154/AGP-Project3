@@ -30,6 +30,7 @@ struct MaterialData
 	uint     MatPad2;
 };
 
+
 // An array of textures, which is only supported in shader model 5.1+.  Unlike Texture2DArray, the textures
 // in this array can be different sizes and formats, making it more flexible than texture arrays.
 Texture2D gDiffuseMap[4] : register(t0);
@@ -56,6 +57,7 @@ cbuffer cbPerObject : register(b0)
 	uint gObjPad1;
 	uint gObjPad2;
 };
+
 
 struct Shockwave
 {
@@ -102,8 +104,8 @@ cbuffer cbPass : register(b1)
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
-    
     Shockwave gShockwaves[1];
+    
     float gPadding[96];
 };
 
@@ -122,6 +124,26 @@ struct VertexOut
 	float2 TexC    : TEXCOORD;
 };
 
+float3 ApplyShockwave(float3 vertexPos, float3 vertexNorm, uint swIndex)
+{
+    // distance from source
+    float x = distance(gShockwaves[swIndex].Pos, vertexPos); // todo source pos in from CB
+    // wave offset from source
+    float radOffset = gShockwaves[swIndex].Raduis; // todo pass radOffset in from CB
+    // thickness of wave
+    //float width = 3.0f; // todo pass in width from CB
+    // wave peak height
+    //float strength = 2.0f; // todo pass in width from CB or remain constant
+    // curve formula y = -(x*width-radOffset)^2 + strength
+    float offset = max(-((x / gShockwaves[swIndex].Width - radOffset) * (x / gShockwaves[swIndex].Width - radOffset)) + gShockwaves[swIndex].Strength, 0.0f);
+    
+    // apply offset in normal direction to PosL
+    return vertexPos + (vertexNorm * offset);
+  
+}
+
+
+
 VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
@@ -129,9 +151,14 @@ VertexOut VS(VertexIn vin)
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[gMaterialIndex];
 	
+    
+    float3 wavePos = ApplyShockwave(vin.PosL, vin.NormalL, 0);
     // Transform to world space.
-    float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
-    vout.PosW = posW.xyz;
+    float4 posW = mul(float4(wavePos, 1.0f), gWorld);
+    
+    
+    
+    vout.PosW =  posW.xyz;
 
     // Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
     vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
@@ -146,6 +173,22 @@ VertexOut VS(VertexIn vin)
     return vout;
 }
 
+float4 ApplyAlphaCorruption(float4 color)
+{
+    // makeshift timer
+    float timeLimit = 20.0f; // 10 secs
+    float timeLeft = timeLimit - gTotalTime;
+    
+    float normalised = clamp(timeLeft / timeLimit,0.0f,1.0f);
+    
+    if(normalised < color.a)
+    {
+        color.g *= 0.1f;
+    }
+    
+    return color;
+}
+
 float4 PS(VertexOut pin) : SV_Target
 {
 	// Fetch the material data.
@@ -157,6 +200,8 @@ float4 PS(VertexOut pin) : SV_Target
 
 	// Dynamically look up the texture in the array.
 	diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamPointWrap, pin.TexC);
+    
+    diffuseAlbedo = ApplyAlphaCorruption(diffuseAlbedo);
     
 #ifdef ALPHA_TEST
     clip(diffuseAlbedo.a - 0.1f);
@@ -187,7 +232,7 @@ float4 PS(VertexOut pin) : SV_Target
 #endif
 
     // Common convention to take alpha from diffuse albedo.
-    litColor.a = diffuseAlbedo.a;
+    //litColor.a = diffuseAlbedo.a;
 
     return litColor;
 }

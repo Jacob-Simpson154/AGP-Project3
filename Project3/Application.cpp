@@ -255,6 +255,10 @@ void Application::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::HealthBox]);
 
+
+	mCommandList->SetPipelineState(mPSOs["terrain"].Get());
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Terrain]);
+
 	mCommandList->OMSetStencilRef(0);
 
 	mCommandList->SetPipelineState(mPSOs["alphaTested"].Get());
@@ -303,6 +307,7 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	if ((btnState & MK_LBUTTON) != 0)
 	{
 		Shoot();
+		mMainPassCB.Shockwaves[0].Reset(mCamera.GetPosition3f());
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
@@ -498,6 +503,10 @@ void Application::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.Lights[1].Strength = { 0.4f, 0.4f, 0.4f };
 	mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
 	mMainPassCB.Lights[2].Strength = { 0.2f, 0.2f, 0.2f };
+	//mMainPassCB.Shockwaves[0].Speed = 10.0f;
+	//mMainPassCB.Shockwaves[0].Strength = 1.0f;
+	//mMainPassCB.Shockwaves[0].Width = 3.0f;
+	mMainPassCB.Shockwaves[0].Update(gt.DeltaTime());
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
@@ -709,6 +718,11 @@ void Application::BuildShadersAndInputLayout()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 #endif
 	};
+#endif
+
+#if	TERRAIN_SHADER_TOGGLE
+	mShaders["terrainVS"] = d3dUtil::CompileShader(L"Shaders\\Terrain.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["terrainPS"] = d3dUtil::CompileShader(L"Shaders\\Terrain.hlsl", defines, "PS", "ps_5_1");
 #endif
 }
 
@@ -1103,31 +1117,23 @@ void Application::BuildPSOs()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&pointSpritePsoDesc, IID_PPV_ARGS(&mPSOs["pointSprites"])));
 
 #endif //GS_TOGGLE
+#if	TERRAIN_SHADER_TOGGLE
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC terrainPSODesc = opaquePsoDesc;
+	terrainPSODesc.PS = {
+		reinterpret_cast<BYTE*>(mShaders["terrainPS"]->GetBufferPointer()),
+		mShaders["terrainPS"]->GetBufferSize()
+	};
+	terrainPSODesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["terrainVS"]->GetBufferPointer()),
+		mShaders["terrainVS"]->GetBufferSize()
+	};
+	terrainPSODesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&terrainPSODesc, IID_PPV_ARGS(&mPSOs["terrain"])));
 
-	//BILLBOARDED ENEMY PSO
-	//All Commented Out Until Geom Shader Is Properly Set Up, Along With Enemy Geometry
-
-	//D3D12_GRAPHICS_PIPELINE_STATE_DESC enemySpritePsoDesc = opaquePsoDesc;
-	//enemySpritePsoDesc.VS =
-	//{
-	//	reinterpret_cast<BYTE*>(mShaders["cacoSpriteVS"]->GetBufferPointer()),
-	//	mShaders["cacoSpriteVS"]->GetBufferSize()
-	//};
-	//enemySpritePsoDesc.GS =
-	//{
-	//	reinterpret_cast<BYTE*>(mShaders["cacoSpriteGS"]->GetBufferPointer()),
-	//	mShaders["cacoSpriteGS"]->GetBufferSize()
-	//};
-	//enemySpritePsoDesc.PS =
-	//{
-	//	reinterpret_cast<BYTE*>(mShaders["cacoSpritePS"]->GetBufferPointer()),
-	//	mShaders["cacoSpritePS"]->GetBufferSize()
-	//};
-	//enemySpritePsoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
-	//enemySpritePsoDesc.InputLayout = { mEnemySpriteInputLayout.data(), (UINT)mEnemySpriteInputLayout.size() };
-	//enemySpritePsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
-	//
-	//ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&enemySpritePsoDesc, IID_PPV_ARGS(&mPSOs["enemySprites"])));
+	
+#endif
+	
 
 }
 
@@ -1213,7 +1219,7 @@ void Application::BuildRenderItems()
 	position.y += scale.y * 0.5f;
 	//Build render items here
 	UINT objectCBIndex = 0;
-
+	
 	// boss
 	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Tentacle");
 	// boss transformations
@@ -1310,7 +1316,7 @@ void Application::BuildRenderItems()
 
 	{
 		auto terrain = BuildRenderItem(objectCBIndex, "landGeo", "grid", "TerrainMat");
-		mRitemLayer[(int)RenderLayer::World].emplace_back(terrain.get());
+		mRitemLayer[(int)RenderLayer::Terrain].emplace_back(terrain.get());
 		mAllRitems.push_back(std::move(terrain));
 	}
 	
@@ -1452,10 +1458,10 @@ void Application::BuildRenderItems()
 		// todo chage to appropriate render layer
 		RenderLayer gpRlayer[GeoPointIndex::COUNT]
 		{
-			RenderLayer::Enemy,
-			RenderLayer::Enemy,
-			RenderLayer::World,
-			RenderLayer::World
+			RenderLayer::PointsGS,
+			RenderLayer::PointsGS,
+			RenderLayer::PointsGS,
+			RenderLayer::PointsGS
 		};
 
 		for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
