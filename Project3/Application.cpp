@@ -1275,15 +1275,15 @@ void Application::BuildRenderItems()
 		mRitemLayer[(int)RenderLayer::AlphaClipped].emplace_back(border_04.get());
 		mAllRitems.push_back(std::move(border_04));
 	}
-	// Ammo crate
+	// Spawnable crates
 	{
-		// set scale for ammo
+		//AMMO
 		scale = { 2.0f,2.0f,2.0f };
 
 		for (size_t i = 0; i < 4; i++)
 		{
-			position.x = sin((float)i) * RandFloat(10.0f,20.0f);
-			position.z = cos((float)i) * RandFloat(10.0f,20.0f);
+			position.x = sin((float)i) * RandFloat(20.0f, (100.0f - mCamera->GetBorderBuffer()));
+			position.z = cos((float)i) * RandFloat(20.0f, (100.0f - mCamera->GetBorderBuffer()));
 
 			// slight inset into terrain
 			position = ApplyTerrainHeight(position, terrainParam);
@@ -1296,10 +1296,11 @@ void Application::BuildRenderItems()
 			mAllRitems.push_back(std::move(ammoCrate));
 		}
 		
+		//HEALTH
 		for (size_t i = 0; i < 4; i++)
 		{
-			position.x = sin((float)i) * RandFloat(10.0f,20.0f);
-			position.z = cos((float)i) * RandFloat(10.0f,20.0f);
+			position.x = sin((float)i) * RandFloat(20.0f, (100.0f-mCamera->GetBorderBuffer()));
+			position.z = cos((float)i) * RandFloat(20.0f, (100.0f - mCamera->GetBorderBuffer()));
 
 			// slight inset into terrain
 			position = ApplyTerrainHeight(position, terrainParam);

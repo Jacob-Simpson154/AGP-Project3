@@ -73,6 +73,8 @@ public:
 	// After modifying camera position/orientation, call to rebuild the view matrix.
 	void UpdateViewMatrix();
 
+	float GetBorderBuffer();
+
 private:
 
 	// Camera coordinate system with coordinates relative to world space.
@@ -88,6 +90,7 @@ private:
 	float mFovY = 0.0f;
 	float mNearWindowHeight = 0.0f;
 	float mFarWindowHeight = 0.0f;
+	float borderBuffer = 5.0f;
 
 	bool mViewDirty = true;
 
