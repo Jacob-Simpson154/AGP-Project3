@@ -249,10 +249,7 @@ private:
 
 	Camera cam;
 	Camera* mCamera = &cam;
-	DirectX::SimpleMath::Vector3 cposition = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
-
-	float cpos = cposition.y + 5.0f;
-
+	
 	POINT mLastMousePos;
 
 	bool fpsReady = false;

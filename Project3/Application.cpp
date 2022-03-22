@@ -1691,13 +1691,17 @@ void Application::CheckCameraCollision()
 {
 	int counter = -1;
 
-	XMVECTOR C = mCamera->GetPosition();
+	Vector3 pos = mCamera->GetPosition();
+	pos = ApplyTerrainHeight(pos, terrainParam);
+	pos.y += 1.5f;
+
+	/*XMVECTOR C = mCamera->GetPosition();
 	
 	float cX = XMVectorGetX(C);
 	float cY = XMVectorGetY(C);
-	float cZ = XMVectorGetZ(C);
+	float cZ = XMVectorGetZ(C);*/
 
-	mCamera->SetPosition(cX, cpos, cZ);
+	mCamera->SetPosition(pos);
 
 
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
