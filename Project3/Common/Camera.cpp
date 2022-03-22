@@ -202,7 +202,6 @@ void Camera::Walk(float d)
 
 void Camera::ClampPosition()
 {
-	float borderBuffer = 5.0f;
 
 	if (mPosition.x > 100 - borderBuffer)
 	{
@@ -297,6 +296,11 @@ void Camera::UpdateViewMatrix()
 
 		mViewDirty = false;
 	}
+}
+
+float Camera::GetBorderBuffer()
+{
+	return borderBuffer;
 }
 
 
