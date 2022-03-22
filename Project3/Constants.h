@@ -66,8 +66,8 @@ namespace gc
 	const ObjData UI_SPRITE_DATA[NUM_UI_SPRITES]
 	{
 		"Data/Models/UI_Controls.obj", "uiControlGeo", "uiControl",					{00.60f,-0.70f,01.00f},
-		"Data/Models/UI_FinLose.obj", "uiFinLoseGeo", "uiFinLose",					{00.00f,00.00f,00.00f},
 		"Data/Models/UI_FinWin.obj", "uiFinWinGeo", "uiFinWin",						{00.00f,00.00f,00.00f},
+		"Data/Models/UI_FinLose.obj", "uiFinLoseGeo", "uiFinLose",					{00.00f,00.00f,00.00f},
 
 		"Data/Models/UI_BarGreen.obj", "uiHealthPlayerGrnGeo", "uiHealthPlayerGrn",	{00.00f,00.90f,00.00f}, // todo make green, scale based on remaining health
 		"Data/Models/UI_BarRed.obj", "uiHealthPlayerRedGeo", "uiHealthPlayerRed",	{00.00f,00.90f,00.00f}, // todo make red
@@ -177,4 +177,8 @@ namespace gc
 		*/
 
 	};
+
+
+
+	const float TIME_LIMIT_SECS = 60.0f;
 }

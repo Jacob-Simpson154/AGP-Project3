@@ -80,7 +80,33 @@ enum class GameplayState : uint32_t
 	Win,
 	Lose
 };
+struct Countdown
+{
+	const float timeRange = gc::TIME_LIMIT_SECS;
+	float timeLeft = gc::TIME_LIMIT_SECS;
+	bool isPaused = false;
+	Countdown() = default;
+	void Update(float dt)
+	{
+		if (!isPaused)
+		{
+			timeLeft -= dt;
+		}
 
+		if (timeLeft < 0.0f)
+		{
+			timeLeft = 0.0f;
+		}
+	}
+
+	bool HasTimeElpased()
+	{
+		return timeLeft <= 0.0f;
+	}
+
+
+
+};
 // used for health and stamina
 struct Stat
 {
@@ -270,6 +296,8 @@ private:
 	float footStepTimer = 0.0f;
 	float footStepInterval = 0.4f;
 	
+	
+
 	GameplayState gameplayState = GameplayState::Start;
 
 	float tempMaxHealth = 100.0f;
@@ -278,4 +306,6 @@ private:
 	Stat playerHealth;
 	Stat playerStamina;
 	Stat bossHealth;
+
+	Countdown countdown;
 };

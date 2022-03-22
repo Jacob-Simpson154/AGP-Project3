@@ -148,16 +148,18 @@ void Application::Update(const GameTimer& gt)
 	}
 
 
-	if (!playerHealth.AboveZero())
+	if (!playerHealth.AboveZero() || countdown.HasTimeElpased())
 	{
 		spriteCtrl[gc::SPRITE_LOSE].SetDisplay(this, true);
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
 	if (!bossHealth.AboveZero())
 	{
-		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, false);
+		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, true);
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
+
+	countdown.Update(gt.DeltaTime());
 
 	playerHealth.Update(gt);
 	playerStamina.Update(gt);
@@ -169,9 +171,9 @@ void Application::Update(const GameTimer& gt)
 	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,playerStamina.Normalise(),gt.DeltaTime());
 
 	// todo pass in appropriate values (positive floats only)
-	pointsDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
-	timeDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
-	ammoDisplay.Update(this, gt.DeltaTime(), gt.TotalTime());
+	pointsDisplay.Update(this, gt.DeltaTime(), 0.0f);
+	timeDisplay.Update(this, gt.DeltaTime(), countdown.timeLeft);
+	ammoDisplay.Update(this, gt.DeltaTime(), 0.0f);
 
 	// hides objective sprite after set time
 	if (gt.TotalTime() > 5.0f)
@@ -190,7 +192,6 @@ void Application::Update(const GameTimer& gt)
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
-
 	//
 	UpdatePoints(gt);
 
@@ -522,10 +523,10 @@ void Application::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.Lights[1].Strength = { 0.4f, 0.4f, 0.4f };
 	mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
 	mMainPassCB.Lights[2].Strength = { 0.2f, 0.2f, 0.2f };
-	//mMainPassCB.Shockwaves[0].Speed = 10.0f;
-	//mMainPassCB.Shockwaves[0].Strength = 1.0f;
-	//mMainPassCB.Shockwaves[0].Width = 3.0f;
 	mMainPassCB.Shockwaves[0].Update(gt.DeltaTime());
+	// timer for terrain corruption
+	mMainPassCB.TimeLeft = countdown.timeLeft;
+	mMainPassCB.TimeLimit = countdown.timeRange;
 
 	auto currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);

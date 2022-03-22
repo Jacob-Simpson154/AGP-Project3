@@ -105,8 +105,9 @@ cbuffer cbPass : register(b1)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
     Shockwave gShockwaves[1];
-    
-    float gPadding[96];
+    float gTimeLimit;
+    float gTimeLeft;
+    float gPadding[86];
 };
 
 struct VertexIn
@@ -179,7 +180,7 @@ float4 ApplyAlphaCorruption(float4 color)
     float timeLimit = 20.0f; // 10 secs
     float timeLeft = timeLimit - gTotalTime;
     
-    float normalised = clamp(timeLeft / timeLimit,0.0f,1.0f);
+    float normalised = clamp(gTimeLeft / gTimeLimit,0.0f,1.0f);
     
     if(normalised < color.a)
     {
@@ -202,11 +203,7 @@ float4 PS(VertexOut pin) : SV_Target
 	diffuseAlbedo *= gDiffuseMap[diffuseTexIndex].Sample(gsamPointWrap, pin.TexC);
     
     diffuseAlbedo = ApplyAlphaCorruption(diffuseAlbedo);
-    
-#ifdef ALPHA_TEST
-    clip(diffuseAlbedo.a - 0.1f);
-#endif
-    
+
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 
