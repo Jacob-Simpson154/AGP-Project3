@@ -169,7 +169,6 @@
     <ClCompile Include="Weapon.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Common\Camera.h" />
     <ClInclude Include="AmmoBox.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="AudioSystem.h" />

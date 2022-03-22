@@ -303,11 +303,10 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 {
 	//This has been changed to make the left mouse button shoot, and the ability to have free first person view will be determined by a variable that will be turned on by right clicking and
 	// paused using the "P" key
-
 	if ((btnState & MK_LBUTTON) != 0)
 	{
 		Shoot();
-		mMainPassCB.Shockwaves[0].Reset(mCamera.GetPosition3f());
+		mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
@@ -533,7 +532,7 @@ void Application::LoadTextures()
 	LoadTexture(L"Data/Textures/white1x1.dds", "tex");
 	LoadTexture(L"Data/Textures/Tentacle.dds", "tempTex");
 	LoadTexture(L"Data/Textures/obstacle.dds", "houseTex");
-	LoadTexture(L"Data/Textures/terrain.dds", "terrainTex");
+	LoadTexture(L"Data/Textures/terrain3.dds", "terrainTex");
 	LoadTexture(L"Data/Textures/WireFence.dds", "fenceTex");
 	LoadTexture(L"Data/Textures/ui.dds", "uiTex");
 }
