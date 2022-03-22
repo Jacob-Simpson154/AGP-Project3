@@ -236,11 +236,13 @@ void Application::Draw(const GameTimer& gt)
 	// The root signature knows how many descriptors are expected in the table.
 	mCommandList->SetGraphicsRootDescriptorTable(3, mSrvDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::AmmoBox]);
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::HealthBox]);
 
+
 	mCommandList->SetPipelineState(mPSOs["terrain"].Get());
-	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::World]);
+	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Terrain]);
 
 	mCommandList->OMSetStencilRef(0);
 
@@ -1185,7 +1187,7 @@ void Application::BuildRenderItems()
 	position.y += scale.y * 0.5f;
 	//Build render items here
 	UINT objectCBIndex = 0;
-
+	
 	// boss
 	auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Tentacle");
 	// boss transformations
@@ -1233,7 +1235,7 @@ void Application::BuildRenderItems()
 
 	{
 		auto terrain = BuildRenderItem(objectCBIndex, "landGeo", "grid", "TerrainMat");
-		mRitemLayer[(int)RenderLayer::World].emplace_back(terrain.get());
+		mRitemLayer[(int)RenderLayer::Terrain].emplace_back(terrain.get());
 		mAllRitems.push_back(std::move(terrain));
 	}
 	

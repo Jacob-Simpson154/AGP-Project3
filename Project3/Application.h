@@ -85,6 +85,7 @@ enum class RenderLayer : int
 	AmmoBox,
 	HealthBox,
 	UI,
+	Terrain,
 	PointsGS,
 	Count
 };

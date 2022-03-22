@@ -30,7 +30,6 @@ struct MaterialData
 	uint     MatPad2;
 };
 
-
 // An array of textures, which is only supported in shader model 5.1+.  Unlike Texture2DArray, the textures
 // in this array can be different sizes and formats, making it more flexible than texture arrays.
 Texture2D gDiffuseMap[4] : register(t0);
@@ -56,6 +55,22 @@ cbuffer cbPerObject : register(b0)
 	uint gObjPad0;
 	uint gObjPad1;
 	uint gObjPad2;
+};
+
+struct Shockwave
+{
+    // origin
+    float3 Pos;
+    // from pos
+    float Raduis;
+    // from radius
+    float Width;
+    // on normal
+    float Strength;
+    // radius multiplier
+    float Speed;
+    // speed and strength
+    float Drag;
 };
 
 // Constant data that varies per material.
@@ -87,6 +102,9 @@ cbuffer cbPass : register(b1)
     // indices [NUM_DIR_LIGHTS+NUM_POINT_LIGHTS, NUM_DIR_LIGHTS+NUM_POINT_LIGHT+NUM_SPOT_LIGHTS)
     // are spot lights for a maximum of MaxLights per object.
     Light gLights[MaxLights];
+    
+    Shockwave gShockwaves[1];
+    float gPadding[96];
 };
 
 struct VertexIn
