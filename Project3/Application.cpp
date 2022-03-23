@@ -1224,8 +1224,7 @@ void Application::BuildRenderItems()
 	// boss transformations
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	bossBox = BoundingBox(position, scale);//神
-	//bossBox = BoundingBox(XMFLOAT3(posX, posY, posZ), XMFLOAT3(scaleX, scaleY, scaleZ));
+	bossBox = BoundingBox(position, XMFLOAT3(scale.x*0.1f, scale.y, scale.z*0.1f));
 
 	// Mobs
 	auto mob_1 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
