@@ -104,7 +104,9 @@ cbuffer cbPass : register(b1)
     Light gLights[MaxLights];
     
     Shockwave gShockwaves[1];
-    float gPadding[96];
+    float gTimeLimit;
+    float gTimeLeft;
+    float gPadding[86];
 };
 
 struct VertexIn

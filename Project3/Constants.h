@@ -24,7 +24,7 @@ struct ObjData
 namespace gc
 {
 	const size_t NUM_OBSTACLE = 4;
-	const size_t NUM_UI_SPRITES = 9;
+	const size_t NUM_UI_SPRITES = 11;
 
 	const ObstacleData OBSTACLE_DATA[NUM_OBSTACLE]
 	{
@@ -49,10 +49,12 @@ namespace gc
 		SPRITE_CONTROLS = 0,
 		SPRITE_LOSE,
 		SPRITE_WIN,
-		SPRITE_HEALTH_PLAYER_RED,
 		SPRITE_HEALTH_PLAYER_GRN,
-		SPRITE_HEALTH_BOSS_RED,
+		SPRITE_HEALTH_PLAYER_RED,
 		SPRITE_HEALTH_BOSS_GRN,
+		SPRITE_HEALTH_BOSS_RED,
+		SPRITE_STAMINA_PLAYER_YLW,
+		SPRITE_STAMINA_PLAYER_GRY,
 		SPRITE_OBJECTIVE,
 		SPRITE_CROSSHAIR,
 		SPRITE_COUNT
@@ -64,14 +66,35 @@ namespace gc
 	const ObjData UI_SPRITE_DATA[NUM_UI_SPRITES]
 	{
 		"Data/Models/UI_Controls.obj", "uiControlGeo", "uiControl",					{00.60f,-0.70f,01.00f},
-		"Data/Models/UI_FinLose.obj", "uiFinLoseGeo", "uiFinLose",					{00.00f,00.00f,00.00f},
 		"Data/Models/UI_FinWin.obj", "uiFinWinGeo", "uiFinWin",						{00.00f,00.00f,00.00f},
-		"Data/Models/UI_Health.obj", "uiHealthPlayerRedGeo", "uiHealthPlayerRed",	{00.00f,00.90f,00.00f}, // todo make red
-		"Data/Models/UI_Health.obj", "uiHealthPlayerGrnGeo", "uiHealthPlayerGrn",	{00.00f,00.90f,00.00f}, // todo make green, scale based on remaining health
-		"Data/Models/UI_Health.obj", "uiHealthBossRedGeo", "uiHealthRedBoss",		{00.00f,00.80f,00.00f}, // todo make green, scale based on remaining health
-		"Data/Models/UI_Health.obj", "uiHealthBossGrnGeo", "uiHealthGrnBoss",		{00.00f,00.80f,00.00f}, // todo make green, scale based on remaining health
+		"Data/Models/UI_FinLose.obj", "uiFinLoseGeo", "uiFinLose",					{00.00f,00.00f,00.00f},
+
+		"Data/Models/UI_BarGreen.obj", "uiHealthPlayerGrnGeo", "uiHealthPlayerGrn",	{00.00f,00.90f,00.00f}, // todo make green, scale based on remaining health
+		"Data/Models/UI_BarRed.obj", "uiHealthPlayerRedGeo", "uiHealthPlayerRed",	{00.00f,00.90f,00.00f}, // todo make red
+		
+		"Data/Models/UI_BarPurple.obj", "uiHealthBossGrnGeo", "uiHealthGrnBoss",	{00.00f,00.70f,00.00f}, // todo make green, scale based on remaining health
+		"Data/Models/UI_BarRed.obj", "uiHealthBossRedGeo", "uiHealthRedBoss",		{00.00f,00.70f,00.00f}, // todo make green, scale based on remaining health
+		
+		"Data/Models/UI_BarYellow.obj", "uiStaminaGryGeo", "uiStaminaGry",			{00.00f,00.80f,00.00f}, // todo make green, scale based on remaining health
+		"Data/Models/UI_BarGrey.obj", "uiStaminaYlwGeo", "uiStaminaYlw",			{00.00f,00.80f,00.00f}, // todo make green, scale based on remaining health
+		
 		"Data/Models/UI_Objective.obj", "uiObjectiveGeo", "uiObjective",			{00.00f,00.00f,00.00f},
 		"Data/Models/UI_CrossHair.obj", "uiCrossHairGeo", "uiCrossHair",			{00.00f,00.00f,00.00f}
+	};
+	// for initialising sprites
+	const bool UI_SPRITE_DEFAULT_DISPLAY[NUM_UI_SPRITES]
+	{
+		true,
+		false,
+		false,
+		true,
+		true,
+		true,
+		true,
+		true,
+		true,
+		true,
+		true
 	};
 
 	// characters available in texture 
@@ -85,7 +108,7 @@ namespace gc
 	// number of chars render items
 	const size_t UI_NUM_RITEM_CHAR = UI_LINE_3_LEN + UI_LINE_1_LEN + UI_LINE_2_LEN;
 	// number of words render items
-	const size_t UI_NUM_RITEM_WORD = 22;
+	const size_t UI_NUM_RITEM_WORD = 6;
 
 	// increment distance between chars
 	const float UI_CHAR_SPACING = 0.07f;
@@ -97,9 +120,9 @@ namespace gc
 	const ObjData UI_WORD = { "Data/Models/UI_Word.obj", "uiWordGeo", "uiWord",		{-0.80f,-0.90f,00.0f} };
 
 
-	const DirectX::SimpleMath::Vector3 UI_POINTS_POS{ -0.50f,00.50f,00.0f };
-	const DirectX::SimpleMath::Vector3 UI_TIME_POS{ -0.50f,00.60f,00.0f };
-	const DirectX::SimpleMath::Vector3 UI_AMMO_POS{ -0.50f,00.70f,00.0f };
+	const DirectX::SimpleMath::Vector3 UI_POINTS_POS{	-0.90f,-0.75f,00.0f };
+	const DirectX::SimpleMath::Vector3 UI_TIME_POS{		-0.90f,-0.85f,00.0f };
+	const DirectX::SimpleMath::Vector3 UI_AMMO_POS{		-0.90f,-0.95f,00.0f };
 
 	const DirectX::SimpleMath::Vector3 UI_OFF_POS{ 100.0f,100.0f,00.0f };
 
@@ -123,4 +146,39 @@ namespace gc
 	
 	};
 
+
+
+	const DirectX::SimpleMath::Vector3 UI_WORD_INIT_POSITION[UI_NUM_RITEM_WORD]
+	{
+		{-0.40f,00.95f,00.0f }, // HEALTH
+		{-9.00f,00.00f,00.0f }, // AMMO
+		{-0.40f,00.75f,00.0f }, // MONSTER
+		{-9.00f,00.00f,00.0f }, // TIME LEFT
+		{-0.40f,00.85f,00.0f }, // STAMINA
+		{-9.00f,00.00f,00.0f }, // BOSS
+		/*
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		{ 0.00f,00.00f,00.0f },
+		*/
+
+	};
+
+
+
+	const float TIME_LIMIT_SECS = 60.0f;
 }

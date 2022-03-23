@@ -84,8 +84,11 @@ struct PassConstants
     // 96 remaining 4byte elements. removed 8 lights. 8*sizeof(Light) == 8 * 12 == 96
     Shockwave Shockwaves[1];
 
-    // 96 - sizeof(Light) == 88
-    float Padding[88]; // 
+    // 96 - sizeof(Shockwave) == 88
+    float TimeLimit;
+    float TimeLeft;
+    // 88 - 2 = 86
+    float Padding[86]; // 
 };
 
 struct MaterialData

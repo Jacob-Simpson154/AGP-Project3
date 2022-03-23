@@ -17,6 +17,7 @@
 #include "Mob.h"
 #include "RenderItemStruct.h"
 #include "Sprint.h"
+#include "ParticleCtrl.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -30,15 +31,7 @@ typedef DirectX::SimpleMath::Matrix Matrix;
 #define TERRAIN_SHADER_TOGGLE 1
 
 
-// boss/ enemy/ particle 
-// todo rename or remove (when appropriate)
-struct GenericPointSomething
-{
-	// ideally const set from constants.h
-	uint32_t vertexCount = 0;
-	std::vector<Point> vData;
 
-};
 
 //struct RenderItem
 //{
@@ -81,6 +74,83 @@ struct GenericPointSomething
 //	int BaseVertexLocation = 0;
 //};
 
+enum class GameplayState : uint32_t
+{
+	Start,
+	Playing,
+	Win,
+	Lose
+};
+struct Countdown
+{
+	const float timeRange = gc::TIME_LIMIT_SECS;
+	float timeLeft = gc::TIME_LIMIT_SECS;
+	bool isPaused = false;
+	Countdown() = default;
+	void Update(float dt)
+	{
+		if (!isPaused)
+		{
+			timeLeft -= dt;
+		}
+
+		if (timeLeft < 0.0f)
+		{
+			timeLeft = 0.0f;
+		}
+	}
+
+	bool HasTimeElpased()
+	{
+		return timeLeft <= 0.0f;
+	}
+
+
+
+};
+// used for health and stamina
+struct Stat
+{
+	const float maximum = 100.0f;
+	float current = 100.0f;
+
+	bool AboveZero()
+	{
+		return current > 0.0f;
+	}
+
+	float Normalise()
+	{
+		Clamp();
+		return current / maximum;
+	}
+
+	Stat() = default;
+	Stat(float maxValue)
+		:
+		maximum(maxValue),
+		current(maxValue)
+	{
+
+	}
+	// keep within limits
+	void Clamp()
+	{
+		if (current > maximum)
+		{
+			current = maximum;
+		} 
+		else if (current < 0.0f)
+		{
+			current = 0.0f;
+		}
+	}
+
+	void Update(const GameTimer& gt)
+	{
+		Clamp();
+	}
+};
 enum class RenderLayer : int
 {
 	World = 0,
@@ -180,10 +250,7 @@ private:
 
 	Camera cam;
 	Camera* mCamera = &cam;
-	DirectX::SimpleMath::Vector3 cposition = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
-
-	float cpos = cposition.y + 5.0f;
-
+	
 	POINT mLastMousePos;
 
 	bool fpsReady = false;
@@ -226,4 +293,18 @@ private:
 	float mAudioVolume = 0.3f;
 	float footStepTimer = 0.0f;
 	float footStepInterval = 0.4f;
+	
+	
+
+	GameplayState gameplayState = GameplayState::Start;
+
+	float tempMaxHealth = 100.0f;
+	float tempCurrentHealth = 100.0f;
+
+	Stat playerHealth;
+	Stat playerStamina;
+	Stat bossHealth;
+
+	Countdown countdown;
+	ParticleSys particleCtrl;
 };

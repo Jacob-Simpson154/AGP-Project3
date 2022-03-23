@@ -302,3 +302,18 @@ void UISprite::SetDisplay(Application* const app, bool visible)
 	// set to update in objectbuffer
 	ir->at(ritemIndex).get()->NumFramesDirty = 1;
 }
+
+void UISprite::SetXScale(Application* const app, float scale, float dt)
+{
+	auto ir = app->GetAllRItems();
+	assert(ritemIndex < ir->size());
+
+	// smooth transition
+	float a = ir->at(ritemIndex).get()->position._11;
+	float b = scale;
+	float s = dt;
+	float x = a * (1.0f - s) + b * s;
+
+	ir->at(ritemIndex).get()->position._11 = x;
+	ir->at(ritemIndex).get()->NumFramesDirty = 1;
+}
