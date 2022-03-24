@@ -1821,7 +1821,6 @@ void Application::Shoot()
 
 void Application::CheckCameraCollision()
 {
-	int counter = -1;
 
 	Vector3 pos = mCamera->GetPosition();
 	pos = ApplyTerrainHeight(pos, terrainParam);
@@ -1836,6 +1835,7 @@ void Application::CheckCameraCollision()
 	mCamera->SetPosition(pos);
 
 
+	int counter = -1;
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
 	{
 		counter++;
@@ -1903,7 +1903,7 @@ void Application::CheckCameraCollision()
 		if (ri->shouldRender == false)
 			continue;
 
-		if (shieldBox[counter].Contains(mCamera->GetPosition()))
+		if (speedBox[counter].Contains(mCamera->GetPosition()))
 		{
 			mGameAudio.Play("PickupHealth", nullptr, false, mAudioVolume, RandomPitchValue());
 
@@ -1923,7 +1923,7 @@ void Application::CheckCameraCollision()
 		if (ri->shouldRender == false)
 			continue;
 
-		if (shieldBox[counter].Contains(mCamera->GetPosition()))
+		if (quadBox[counter].Contains(mCamera->GetPosition()))
 		{
 			mGameAudio.Play("PickupHealth", nullptr, false, mAudioVolume, RandomPitchValue());
 
@@ -1943,7 +1943,7 @@ void Application::CheckCameraCollision()
 		if (ri->shouldRender == false)
 			continue;
 
-		if (shieldBox[counter].Contains(mCamera->GetPosition()))
+		if (infiniteBox[counter].Contains(mCamera->GetPosition()))
 		{
 			mGameAudio.Play("PickupHealth", nullptr, false, mAudioVolume, RandomPitchValue());
 
