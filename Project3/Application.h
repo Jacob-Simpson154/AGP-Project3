@@ -18,6 +18,8 @@
 #include "RenderItemStruct.h"
 #include "ShieldPowerup.h"
 #include "SpeedPowerup.h"
+#include "QuadPowerup.h"
+#include "InfinitePowerup.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -86,6 +88,8 @@ enum class RenderLayer : int
 	HealthBox,
 	ShieldPowerup,
 	SpeedPowerup,
+	QuadPowerup,
+	InfinitePowerup,
 	UI,
 	PointsGS,
 	Count
@@ -202,11 +206,15 @@ private:
 	BoundingBox healthBox[4];
 	BoundingBox shieldPowerup[4];
 	BoundingBox speedPowerup[4];
+	BoundingBox quadPowerup[4];
+	BoundingBox infinitePowerup[4];
 	BoundingBox obstBox[gc::NUM_OBSTACLE];
 	AmmoBox ammoBoxClass[4];
 	HealthBox healthBoxClass[4];
 	ShieldPowerup shieldPowerupClass[4];
 	SpeedPowerup speedPowerupClass[4];
+	QuadPowerup quadPowerupClass[4];
+	InfinitePowerup infinitePowerupClass[4];
 	BoundingBox cameraBox;
 
 	Boss bossStats;

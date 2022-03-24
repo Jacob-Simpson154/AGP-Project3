@@ -29,6 +29,8 @@
     <ClCompile Include="Weapon.cpp" />
     <ClCompile Include="ShieldPowerup.cpp" />
     <ClCompile Include="SpeedPowerup.cpp" />
+    <ClCompile Include="QuadPowerup.cpp" />
+    <ClCompile Include="InfinitePowerup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Camera.h" />
@@ -58,5 +60,7 @@
     <ClInclude Include="Weapon.h" />
     <ClInclude Include="ShieldPowerup.h" />
     <ClInclude Include="SpeedPowerup.h" />
+    <ClInclude Include="QuadPowerup.h" />
+    <ClInclude Include="InfinitePowerup.h" />
   </ItemGroup>
 </Project>

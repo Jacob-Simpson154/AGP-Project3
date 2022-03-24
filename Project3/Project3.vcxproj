@@ -160,7 +160,9 @@
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="HealthBox.cpp" />
+    <ClCompile Include="InfinitePowerup.cpp" />
     <ClCompile Include="Mob.cpp" />
+    <ClCompile Include="QuadPowerup.cpp" />
     <ClCompile Include="ReadMe.cpp" />
     <ClCompile Include="ShieldPowerup.cpp" />
     <ClCompile Include="SpeedPowerup.cpp" />
@@ -187,6 +189,8 @@
     <ClInclude Include="Constants.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="HealthBox.h" />
+    <ClInclude Include="InfinitePowerup.h" />
+    <ClInclude Include="QuadPowerup.h" />
     <ClInclude Include="ShieldPowerup.h" />
     <ClInclude Include="SpeedPowerup.h" />
     <ClInclude Include="SpriteSystem.h" />
