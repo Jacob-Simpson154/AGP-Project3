@@ -160,9 +160,13 @@
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="HealthBox.cpp" />
+    <ClCompile Include="InfinitePowerup.cpp" />
     <ClCompile Include="Mob.cpp" />
     <ClCompile Include="ParticleCtrl.cpp" />
+    <ClCompile Include="QuadPowerup.cpp" />
     <ClCompile Include="ReadMe.cpp" />
+    <ClCompile Include="ShieldPowerup.cpp" />
+    <ClCompile Include="SpeedPowerup.cpp" />
     <ClCompile Include="Sprint.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="Terrain.cpp" />

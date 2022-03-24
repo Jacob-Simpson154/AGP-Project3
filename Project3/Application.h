@@ -18,6 +18,10 @@
 #include "RenderItemStruct.h"
 #include "Sprint.h"
 #include "ParticleCtrl.h"
+#include "ShieldPowerup.h"
+#include "SpeedPowerup.h"
+#include "QuadPowerup.h"
+#include "InfinitePowerup.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -158,6 +162,10 @@ enum class RenderLayer : int
 	AlphaClipped,
 	AmmoBox,
 	HealthBox,
+	ShieldBox,
+	SpeedBox,
+	QuadBox,
+	InfiniteBox,
 	UI,
 	Terrain,
 	PointsGS,
@@ -273,9 +281,17 @@ private:
 	BoundingBox mobBox[4];
 	BoundingBox ammoBox[4];
 	BoundingBox healthBox[4];
+	BoundingBox shieldBox[4];
+	BoundingBox speedBox[4];
+	BoundingBox quadBox[4];
+	BoundingBox infiniteBox[4];
 	BoundingBox obstBox[gc::NUM_OBSTACLE];
 	AmmoBox ammoBoxClass[4];
 	HealthBox healthBoxClass[4];
+	ShieldPowerup shieldBoxClass[1];
+	SpeedPowerup speedBoxClass[1];
+	QuadPowerup quadBoxClass[1];
+	InfinitePowerup infiniteBoxClass[1];
 	BoundingBox cameraBox;
 
 	Boss bossStats;
@@ -293,7 +309,7 @@ private:
 	float mAudioVolume = 0.3f;
 	float footStepTimer = 0.0f;
 	float footStepInterval = 0.4f;
-	
+	float MAX_POWERUPS = 1.f;
 	
 
 	GameplayState gameplayState = GameplayState::Start;
