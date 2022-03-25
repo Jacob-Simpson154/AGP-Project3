@@ -270,7 +270,7 @@ private:
 	AudioSystem mGameAudio;
 
 	BoundingBox bossBox;
-	BoundingBox mobBox[4];
+	std::vector<BoundingBox> mobBox;
 	BoundingBox ammoBox[4];
 	BoundingBox healthBox[4];
 	BoundingBox obstBox[gc::NUM_OBSTACLE];

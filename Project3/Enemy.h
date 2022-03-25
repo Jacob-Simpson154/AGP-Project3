@@ -5,6 +5,7 @@
 #include "Common/Camera.h"
 #include <random>
 #include <time.h>
+#include <cmath>
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
