@@ -375,7 +375,7 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	if ((btnState & MK_LBUTTON) != 0)
 	{
 		Shoot();
-		particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], mCamera->GetPosition3f(),5.0f);
+		//particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], mCamera->GetPosition3f(),5.0f);
 
 		mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
 
@@ -1307,7 +1307,7 @@ void Application::BuildRenderItems()
 	// boss transformations
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	mobBox.push_back(BoundingBox(position, scale*0.75f));
+	mobBox.push_back(BoundingBox(XMFLOAT3(0, 0, 0), scale*.05f));
 
 	// Mobs
 	auto mob_1 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
@@ -1787,22 +1787,20 @@ void Application::Shoot()
 		for (auto ri : mRitemLayer[(int)RenderLayer::Enemy])
 		{
 			auto geo = ri->geometry;
+
 			if (ri->shouldRender == false)
 				continue;
 
 			XMMATRIX W = XMLoadFloat4x4(&ri->position);
 			XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
 
-			// Tranform ray to vi space of Mesh.
 			XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
 
 			rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
 			rayDir = XMVector3TransformNormal(rayDir, toLocal);
 
-			// Make the ray direction unit length for the intersection tests.
 			rayDir = XMVector3Normalize(rayDir);
 
-			//Ray/AABB test to see if ray is close to mesh
 			float tmin = 0.0f;
 			if (mobBox.at(i).Intersects(rayOrigin, rayDir, tmin))
 			{
