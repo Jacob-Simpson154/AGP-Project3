@@ -1307,7 +1307,7 @@ void Application::BuildRenderItems()
 	// boss transformations
 	XMStoreFloat4x4(&boss->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 	XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	mobBox.push_back(BoundingBox(position, XMFLOAT3(scale.x*0.1f, scale.y*0.1f, scale.z*0.1f)));
+	mobBox.push_back(BoundingBox(position, scale*0.75f));
 
 	// Mobs
 	auto mob_1 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
@@ -1796,6 +1796,9 @@ void Application::Shoot()
 			// Tranform ray to vi space of Mesh.
 			XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
 
+			rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
+			rayDir = XMVector3TransformNormal(rayDir, toLocal);
+
 			// Make the ray direction unit length for the intersection tests.
 			rayDir = XMVector3Normalize(rayDir);
 
@@ -1815,7 +1818,6 @@ void Application::Shoot()
 			i++;
 		}
 	}
-
 }
 
 void Application::CheckCameraCollision()
