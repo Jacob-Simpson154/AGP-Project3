@@ -10,6 +10,7 @@ Boss::Boss()
 	hp = 100;
 	posX = 0;
 	posZ = 0;
+	spawn = true;
 }
 
 Boss::~Boss()
@@ -17,10 +18,11 @@ Boss::~Boss()
 
 }
 
-void Boss::Setup(RenderItem* geo, Camera* player)
+void Boss::Setup(RenderItem* geo, Camera* player, BoundingBox* box)
 {
 	geoObject = geo;
 	playerObject = player;
+	hitbox = box;
 }
 
 void Boss::Movement() {
@@ -28,6 +30,22 @@ void Boss::Movement() {
 	geoObject->NumFramesDirty = gNumFrameResources;
 	tt += 0.0f;
 	Pattern_1();
+}
+
+void Boss::Update()
+{
+	if (hp >= 75) Pattern_1();
+	//else if (hp >= 50) Pattern_2();
+}
+
+bool Boss::SpawnReady()
+{
+	return spawn;
+}
+
+float Boss::GetSpawnRate()
+{
+	return spawnRate;
 }
 
 void Boss::Pattern_1()
@@ -41,7 +59,7 @@ void Boss::Pattern_1()
 	
 	if (playerToBoss <= 10)
 	{
-		tt += 1;
+		//tt += 1;
 		playerObject->SetPosition(XMFLOAT3(playerObject->GetPosition3f().x * 4, playerObject->GetPosition3f().y, playerObject->GetPosition3f().z * 4));
 		//XMVectorLerp();
 	}

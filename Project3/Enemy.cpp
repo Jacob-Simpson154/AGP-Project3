@@ -28,6 +28,7 @@ bool Enemy::DealDamage(int damage)
 	hp -= damage;
 	if (hp <= 0)
 		return true;
+		//geoObject->material
 	else return false;
 }
 

@@ -104,11 +104,12 @@ bool Application::Initialize()
 		XMFLOAT3(0.0f, 1.0f, 0.0f),
 		XMFLOAT3(0.0f, 1.0f, 0.0f));
 	currentGun.Setup("Pistol", 1, 7);
-	bossStats.Setup(mAllRitems.at(74).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry
-	for (size_t i = 0; i < 4; i++)
+	bossStats.Setup(mAllRitems.at(90).get(), mCamera, &mobBox.at(0));//Possibly move this somewhere else in order to setup the geometry
+
+	for (size_t i = 0; i < 1; i++)
 	{
 		Mob m = Mob();
-		m.Setup(mAllRitems.at(75 + i).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry)
+		m.Setup(mAllRitems.at(91 + i).get(), mCamera, &mobBox.at(1 + i));//Possibly move this somewhere else in order to setup the geometry)
 		mobs.push_back(m);
 		//mobs.at(i).Setup(mAllRitems.at(6 + i).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry
 	}
@@ -490,6 +491,35 @@ void Application::UpdateMovement()
 {
 	bossStats.Movement();
 	for (size_t i = 0; i < mobs.size(); i++) mobs.at(i).Movement();
+	//if (mobs.size() < 5) SpawnEnemy();
+
+	if ((int)GetGameTime() % 8 == 0 && (int)GetGameTime() >= 7) SpawnEnemy();
+}
+
+void Application::SpawnEnemy()
+{
+	// initial values for boss
+	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight({ 0.0f,0.0f,0.0f }, terrainParam);
+	DirectX::SimpleMath::Vector3 scale = { 10.0f,10.0f,10.0f };
+	// on ground
+	position.y += scale.y * 0.5f;
+	//Build render items here
+	UINT objectCBIndex = 0;
+
+	auto mob_1 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	// mob transformations
+	XMStoreFloat4x4(&mob_1->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(-5, 5, 0));
+	XMStoreFloat4x4(&mob_1->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	mobBox.push_back(BoundingBox(XMFLOAT3(-5, 5, 0), scale * 0.18f));
+	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_1.get());
+	mAllRitems.push_back(std::move(mob_1));
+
+	Mob m = Mob();
+	m.Setup(mAllRitems.at(mAllRitems.size() - 1).get(), mCamera, &mobBox.at(mobBox.size() - 1));
+	mobs.push_back(m);
+	mFrameResources.clear();
+	BuildFrameResources();
+	//BuildPSOs();
 }
 
 void Application::UpdateObjectCBs(const GameTimer& gt)
@@ -1314,25 +1344,27 @@ void Application::BuildRenderItems()
 	// mob transformations
 	XMStoreFloat4x4(&mob_1->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(-5, 5, 0));
 	XMStoreFloat4x4(&mob_1->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	mobBox.push_back(BoundingBox(XMFLOAT3(-5, 5, 0), XMFLOAT3(1, 1, 1)));
+	//mobBox.push_back(BoundingBox(XMFLOAT3(-5, 5, 0), XMFLOAT3(1, 1, 1)));
+	mobBox.push_back(BoundingBox(XMFLOAT3(-5, 5, 0), scale*0.18f));
+	XMFLOAT3 tt = mobBox.at(1).Extents;
 
-	auto mob_2 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-	// mob transformations
-	XMStoreFloat4x4(&mob_2->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(5, 5, 0));
-	XMStoreFloat4x4(&mob_2->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	mobBox.push_back(BoundingBox(XMFLOAT3(5, 5, 0), XMFLOAT3(1, 1, 1)));
+	//auto mob_2 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	//// mob transformations
+	//XMStoreFloat4x4(&mob_2->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(5, 5, 0));
+	//XMStoreFloat4x4(&mob_2->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	//mobBox.push_back(BoundingBox(XMFLOAT3(5, 5, 0), scale * .25f));
 
-	auto mob_3 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-	// mob transformations
-	XMStoreFloat4x4(&mob_3->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, -5));
-	XMStoreFloat4x4(&mob_3->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	mobBox.push_back(BoundingBox(XMFLOAT3(0, 5, -5), XMFLOAT3(1, 1, 1)));
+	//auto mob_3 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	//// mob transformations
+	//XMStoreFloat4x4(&mob_3->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, -5));
+	//XMStoreFloat4x4(&mob_3->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	//mobBox.push_back(BoundingBox(XMFLOAT3(0, 5, -5), scale * .25f));
 
-	auto mob_4 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-	// mob transformations
-	XMStoreFloat4x4(&mob_4->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, 5));
-	XMStoreFloat4x4(&mob_4->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	mobBox.push_back(BoundingBox(XMFLOAT3(0, 5, 5), XMFLOAT3(1, 1, 1)));
+	//auto mob_4 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+	//// mob transformations
+	//XMStoreFloat4x4(&mob_4->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, 5));
+	//XMStoreFloat4x4(&mob_4->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
+	//mobBox.push_back(BoundingBox(XMFLOAT3(0, 5, 5), scale * .25f));
 	
 	//Border visual (temp)
 	{
@@ -1630,16 +1662,16 @@ void Application::BuildRenderItems()
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
 
 	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_1.get());
-	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_2.get());
-	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_3.get());
-	mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_4.get());
+	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_2.get());
+	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_3.get());
+	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_4.get());
 
 	// render items to all render items
 	mAllRitems.push_back(std::move(boss));
 	mAllRitems.push_back(std::move(mob_1));
-	mAllRitems.push_back(std::move(mob_2));
-	mAllRitems.push_back(std::move(mob_3));
-	mAllRitems.push_back(std::move(mob_4));
+	//mAllRitems.push_back(std::move(mob_2));
+	//mAllRitems.push_back(std::move(mob_3));
+	//mAllRitems.push_back(std::move(mob_4));
 	
 
 }
@@ -1802,16 +1834,18 @@ void Application::Shoot()
 			rayDir = XMVector3Normalize(rayDir);
 
 			float tmin = 0.0f;
-			if (mobBox.at(i).Intersects(rayOrigin, rayDir, tmin))
+			if (mobBox.at(1).Intersects(rayOrigin, rayDir, tmin))
 			{
 				mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
 
-				bool isDead = mobs.at(i).DealDamage(currentGun.GetDamage());
+
+				bool isDead = i == 0 ? bossStats.DealDamage(currentGun.GetDamage()) : mobs.at(i-1).DealDamage(currentGun.GetDamage());
 				if (isDead == true)
 				{
 					ri->material = mMaterials["Grey"].get();
 					ri->NumFramesDirty = gNumFrameResources;
 				}
+				//This entire sequence needs to be handled by the enemy scripts. This can be achieved by giving the access to 'mMaterials'
 			}
 			i++;
 		}

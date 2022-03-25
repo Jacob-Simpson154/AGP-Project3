@@ -219,6 +219,7 @@ private:
 	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
 	void UpdateMovement();
+	void SpawnEnemy();
 	void CheckCameraCollision();
 	void PlayFootAudio(float);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();

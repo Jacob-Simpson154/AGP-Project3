@@ -21,12 +21,14 @@ class Enemy
 		void FollowTarget(XMFLOAT3 targetPos);
 		/*void Setup(int stage, int health, RenderItem* geo);*/
 		virtual void Movement() = 0;
+		virtual void Update() = 0;
 
 	//private:
 		int hp;
 		int stage;
 		RenderItem* geoObject;
 		Camera* playerObject;
+		BoundingBox* hitbox;
 		float tX = 0, tY, tZ, tt = 0;
 
 		float posX = 0.0f;
