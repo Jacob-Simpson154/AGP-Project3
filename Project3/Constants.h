@@ -21,6 +21,18 @@ struct ObjData
 	DirectX::SimpleMath::Vector3 position;
 };
 
+struct NoramlisedAnimData
+{
+	// left, top, width, height
+	DirectX::SimpleMath::Vector4 initFloatRect;
+	// normalised value incremented between frames
+	float frameOffset;
+	// total number of frames in animation
+	int numFrames;
+	bool loop = true;
+	bool animating = true;
+};
+
 namespace gc
 {
 	const size_t NUM_OBSTACLE = 4;
@@ -181,4 +193,33 @@ namespace gc
 
 
 	const float TIME_LIMIT_SECS = 60.0f;
+
+	const float ANIM_FRAME_TIME = 0.2f;
+
+
+	enum AnimIndex {
+		ENEMY_IDLE,
+		ENEMY_DIE,
+		BOSS_IDLE,
+		BOSS_DIE,
+		PARTICLE_PURPLE,
+		PARTICLE_BLUE,
+		GUN,
+		COUNT
+	};
+
+	const float ANIM_TEXTURE_DIM = 1.0f / 1024.0f;
+
+	// left, top, width, height
+	const NoramlisedAnimData ANIM_DATA[AnimIndex::COUNT]
+	{
+		// * ANIM_TEXTURE_DIM normalies texcoord for uv
+		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+	};
 }

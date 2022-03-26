@@ -22,6 +22,8 @@
 #include "SpeedPowerup.h"
 #include "QuadPowerup.h"
 #include "InfinitePowerup.h"
+#include "Animation.h"
+
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -324,4 +326,6 @@ private:
 
 	Countdown countdown;
 	ParticleSys particleCtrl;
+
+	Animation tempAnim;
 };

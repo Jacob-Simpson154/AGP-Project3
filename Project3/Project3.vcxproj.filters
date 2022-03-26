@@ -96,6 +96,7 @@
     <ClCompile Include="SpeedPowerup.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="Animation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AmmoBox.h">
@@ -176,6 +177,7 @@
     <ClInclude Include="ParticleCtrl.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="Animation.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header">
