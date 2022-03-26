@@ -188,7 +188,40 @@ void BillboardingPointOrientation(VertexOut gin, inout TriangleStream<GeomOut> t
 
 void BillboardingAxisOrientation(VertexOut gin, inout TriangleStream<GeomOut> triStream)
 {
-    // todo
+    //Set Up Vectors
+	float3 up = float3(0.0f, 1.0f, 0.0f);
+	float3 look = gEyePosW - gin.Pos;
+	look.y = 0.0f;
+	look = normalize(look);
+	float3 right = cross(up, look);
+
+	//Half Height/Width
+	float halfWidth = 0.5f * gin.Size.x;
+	float halfHeight = 0.5f * gin.Size.y;
+
+	//Calculate Quad
+	float4 v[4];
+	v[0] = float4(gin.Pos + halfWidth * right - halfHeight * up, 1.0f);
+	v[1] = float4(gin.Pos + halfWidth * right + halfHeight * up, 1.0f);
+	v[2] = float4(gin.Pos - halfWidth * right - halfHeight * up, 1.0f);
+	v[3] = float4(gin.Pos - halfWidth * right + halfHeight * up, 1.0f);
+
+    float2 uv[4];
+    uv[0] = float2(gin.TexRect.x , gin.TexRect.y + gin.TexRect.w );                 //float2(1.0f,1.0f);
+    uv[1] = float2(gin.TexRect.x , gin.TexRect.y );                                 //float2(1.0f,0.0f);
+    uv[2] = float2(gin.TexRect.x + gin.TexRect.z, gin.TexRect.y + gin.TexRect.w);   //float2(0.0f,1.0f);
+    uv[3] = float2(gin.TexRect.x + gin.TexRect.z,gin.TexRect.y);                    //float2(0.0f,0.0f); 
+    
+    GeomOut output = gin;
+    for(int i = 0; i < 4; ++i)
+    {
+        output.PosH = mul(float4(v[i]), gViewProj);
+        output.PosW = v[i].xyz;
+        output.NormalW = float3(0.0f, 0.0f, 1.0f);
+        
+        output.TexC = uv[i];
+        triStream.Append(output);
+    }
 }
 void BillboardingFixedDouble(VertexOut gin, inout TriangleStream<GeomOut> triStream)
 {

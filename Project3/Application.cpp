@@ -186,6 +186,15 @@ void Application::Update(const GameTimer& gt)
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
 
+	for (size_t i = 0; i < mobs.size(); i++)
+	{
+		Vector3 mp = ApplyTerrainHeight({ mobs.at(i).posX, mobs.at(i).posY, mobs.at(i).posZ }, terrainParam);
+		mp.y +=  0.5f;
+		mobs.at(i).posY = mp.y;
+	}
+
+
+
 	countdown.Update(gt.DeltaTime());
 
 	playerHealth.Update(gt);
@@ -527,7 +536,7 @@ void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
 		{
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Pos = position;
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Size = { scale.x,scale.y };
-			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard = BillboardType::FIXED_SINGLE;
+			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard = BillboardType::AXIS_ORIENTATION;
 			mobs.at(enemySpawnIndex).isActive = true;
 
 			enemySpawnIndex = (enemySpawnIndex + 1) % gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY];
@@ -550,7 +559,7 @@ void Application::SwawnBoss(const XMFLOAT3& pos, const XMFLOAT3& scale)
 
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Pos = pos;
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Size = { scale.x,scale.y };
-	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Billboard = BillboardType::FIXED_SINGLE;
+	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Billboard = BillboardType::AXIS_ORIENTATION;
 	mobBox.at(0) = BoundingBox(position, scale);
 }
 
