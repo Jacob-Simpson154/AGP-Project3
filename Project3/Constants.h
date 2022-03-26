@@ -224,4 +224,7 @@ namespace gc
 		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
 		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
 	};
+
+
+	const int BOSS_MAX_HEALTH = 100;
 }

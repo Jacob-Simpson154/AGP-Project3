@@ -203,13 +203,15 @@ void Application::Update(const GameTimer& gt)
 
 	particleCtrl.Update(&mGeoPoints.at(GeoPointIndex::PARTICLE), gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_HEALTH_PLAYER_GRN].SetXScale(this,playerHealth.Normalise(),gt.DeltaTime());
-	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this,bossHealth.Normalise(),gt.DeltaTime());
+	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this, (float)bossStats.hp / (float)gc::BOSS_MAX_HEALTH,gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,playerStamina.Normalise(),gt.DeltaTime());
+
+	
 
 	// todo pass in appropriate values (positive floats only)
 	pointsDisplay.Update(this, gt.DeltaTime(), 0.0f);
 	timeDisplay.Update(this, gt.DeltaTime(), countdown.timeLeft);
-	ammoDisplay.Update(this, gt.DeltaTime(), 0.0f);
+	ammoDisplay.Update(this, gt.DeltaTime(), currentGun.GetLoadedAmmo());
 
 	// hides objective sprite after set time
 	if (gt.TotalTime() > 5.0f)
@@ -1887,13 +1889,14 @@ void Application::Shoot()
 				if (mobBox.at(bbIndex).Intersects(rayOrigin, rayDir, tmin))
 				{
 					mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
+					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { bossStats.posX, bossStats.posY, bossStats.posZ }, 5.0f);
+					
 
-					bool isDead = i == 0 ? bossStats.DealDamage(currentGun.GetDamage()) : mobs.at(i - 1).DealDamage(currentGun.GetDamage());
-					if (isDead == true)
+					if (bossStats.DealDamage(currentGun.GetDamage()))
 					{
-						// disables render
 						p->Billboard = BillboardType::NONE;
 					}
+
 				}
 			}
 			// mob collision logic
@@ -1902,7 +1905,14 @@ void Application::Shoot()
 				// mobs
 				if (mobBox.at(bbIndex).Intersects(rayOrigin, rayDir, tmin))
 				{
+					
 					mGameAudio.Play("EnemyTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
+					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { mobs.at(pointIndex).posX, mobs.at(pointIndex).posY , mobs.at(pointIndex).posZ }, 5.0f);
+
+					if (mobs.at(pointIndex).DealDamage(currentGun.GetDamage()))
+					{
+						p->Billboard = BillboardType::NONE;
+					}
 				}
 			}
 

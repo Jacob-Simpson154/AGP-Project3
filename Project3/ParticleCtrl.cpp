@@ -9,6 +9,10 @@ void ParticleData::Update(float dt)
 		size -= sizeMulti * dt;
 		pos += vel * dt;
 	}
+	else
+	{
+		
+	}
 
 }
 
@@ -33,6 +37,10 @@ void ParticleSys::Update(std::vector<Point>* const geoPoints, float dt)
 		geoPoints->at(i).Size.x = data.at(i).size;
 		geoPoints->at(i).Size.y = data.at(i).size;
 		geoPoints->at(i).Billboard = BillboardType::FIXED_SINGLE;
+		if (geoPoints->at(i).Size.x <= 0.0f || geoPoints->at(i).Size.y <= 0.0f)
+		{
+			geoPoints->at(i).Billboard = BillboardType::NONE;
+		}
 	}
 
 }

@@ -1,13 +1,14 @@
 #include "Boss.h"
 
 #include "FrameResource.h"
+#include "Constants.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
 Boss::Boss()
 {
-	hp = 100;
+	hp = gc::BOSS_MAX_HEALTH;
 	posX = 0;
 	posZ = 0;
 	spawn = true;
