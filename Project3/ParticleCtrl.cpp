@@ -36,7 +36,7 @@ void ParticleSys::Update(std::vector<Point>* const geoPoints, float dt)
 		geoPoints->at(i).Pos = data.at(i).pos;
 		geoPoints->at(i).Size.x = data.at(i).size;
 		geoPoints->at(i).Size.y = data.at(i).size;
-		geoPoints->at(i).Billboard = BillboardType::FIXED_SINGLE;
+		geoPoints->at(i).Billboard = BillboardType::AXIS_ORIENTATION;
 		if (geoPoints->at(i).Size.x <= 0.0f || geoPoints->at(i).Size.y <= 0.0f)
 		{
 			geoPoints->at(i).Billboard = BillboardType::NONE;

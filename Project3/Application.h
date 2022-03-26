@@ -23,6 +23,7 @@
 #include "QuadPowerup.h"
 #include "InfinitePowerup.h"
 #include "Animation.h"
+#include <Mouse.h>
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -335,4 +336,7 @@ private:
 
 	//
 	uint32_t enemySpawnIndex = 0;
+
+	std::unique_ptr<Mouse> mouse;
+	
 };

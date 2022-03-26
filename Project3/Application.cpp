@@ -186,6 +186,12 @@ void Application::Update(const GameTimer& gt)
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
 
+	{
+		Vector3 bossPos = ApplyTerrainHeight({ bossStats.posX,bossStats.posY,bossStats.posZ },terrainParam);
+		bossPos.y += 10.5f;
+		bossStats.posY = bossPos.y;
+	}
+
 	for (size_t i = 0; i < mobs.size(); i++)
 	{
 		Vector3 mp = ApplyTerrainHeight({ mobs.at(i).posX, mobs.at(i).posY, mobs.at(i).posZ }, terrainParam);
@@ -193,14 +199,12 @@ void Application::Update(const GameTimer& gt)
 		mobs.at(i).posY = mp.y;
 	}
 
-
-
 	countdown.Update(gt.DeltaTime());
 
 	playerHealth.Update(gt);
 	playerStamina.Update(gt);
 	bossHealth.Update(gt);
-
+	
 	particleCtrl.Update(&mGeoPoints.at(GeoPointIndex::PARTICLE), gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_HEALTH_PLAYER_GRN].SetXScale(this,playerHealth.Normalise(),gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this, (float)bossStats.hp / (float)gc::BOSS_MAX_HEALTH,gt.DeltaTime());
@@ -218,8 +222,6 @@ void Application::Update(const GameTimer& gt)
 	{
 		spriteCtrl[gc::SPRITE_OBJECTIVE].SetDisplay(this, false);
 	}
-
-
 
 	mGameAudio.Update(mTimer.DeltaTime(), mCamera->GetPosition3f(), mCamera->GetLook3f(), mCamera->GetUp3f());
 
@@ -420,6 +422,7 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	{
 		mLastMousePos.x = x;
 		mLastMousePos.y = y;
+		mouse->Get().SetVisible(false);
 
 		mGameAudio.Play("evilMusic");
 
@@ -445,8 +448,8 @@ void Application::OnMouseMove(WPARAM btnState, int x, int y)
 	if ((fpsReady) != 0)
 	{
 		// Make each pixel correspond to a quarter of a degree.
-		float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
-		float dy = XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
+		float dx = XMConvertToRadians(0.9f * static_cast<float>(x - mLastMousePos.x));
+		float dy = XMConvertToRadians(0.9f * static_cast<float>(y - mLastMousePos.y));
 
 		mCamera->Pitch(dy);
 		mCamera->RotateY(dx);
@@ -559,7 +562,7 @@ void Application::SwawnBoss(const XMFLOAT3& pos, const XMFLOAT3& scale)
 	// on ground
 	position.y += scale.y * 0.5f;
 
-	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Pos = pos;
+	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Pos = position;
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Size = { scale.x,scale.y };
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Billboard = BillboardType::AXIS_ORIENTATION;
 	mobBox.at(0) = BoundingBox(position, scale);
@@ -877,7 +880,7 @@ void Application::BuildShadersAndInputLayout()
 void Application::BuildTerrainGeometry()
 {
 	GeometryGenerator geoGen;
-	//srand(time(0));
+	srand(time(0));
 
 	const DirectX::SimpleMath::Vector2 terrainRes(200.0f);
 	
@@ -2010,8 +2013,8 @@ void Application::CheckCameraCollision()
 
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
-			//Heal - feed the below get to a health class
-			healthBoxClass[counter].Consume();
+			// normalise %
+			playerHealth.current += (healthBoxClass[counter].Consume() * 0.01f) / playerHealth.maximum;
 		}
 	}
 
