@@ -8,7 +8,6 @@ Enemy::Enemy()
 
 	posX = distribution(random_number_engine);
 	posZ = distribution(random_number_engine);
-	Sleep(1000);//? - Dirty method to prevent enemies from spawning on top of each other
 }
 
 Enemy::~Enemy()

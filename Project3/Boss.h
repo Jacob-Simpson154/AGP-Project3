@@ -1,12 +1,14 @@
 #pragma once
 #include "Enemy.h"
 
+class Point;
+
 class Boss : public Enemy
 {
 public: 
 	Boss();
 	~Boss();
-	void Setup(RenderItem* geo, Camera* player, BoundingBox* box);
+	void Setup(Point* geo, Camera* player, BoundingBox* box);
 	void Enemy::Movement();
 	void Enemy::Update();
 	void Pattern_1();
@@ -21,4 +23,5 @@ private:
 	float tt = 0;*/
 	bool spawn;
 	float spawnRate = 1;
+	Point* pointObject;
 };

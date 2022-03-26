@@ -1,6 +1,6 @@
 #include "Boss.h"
 
-
+#include "FrameResource.h"
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
@@ -18,16 +18,25 @@ Boss::~Boss()
 
 }
 
-void Boss::Setup(RenderItem* geo, Camera* player, BoundingBox* box)
+void Boss::Setup(Point* geo, Camera* player, BoundingBox* box)
 {
-	geoObject = geo;
+	assert(box);
+	//geoObject = geo;
+	pointObject = geo;
 	playerObject = player;
 	hitbox = box;
 }
 
-void Boss::Movement() {
-	XMStoreFloat4x4(&geoObject->position, XMMatrixScaling(10, 10, 10) * XMMatrixTranslation(posX, posY + tt, posZ));
-	geoObject->NumFramesDirty = gNumFrameResources;
+void Boss::Movement() 
+{
+	assert(hitbox);
+	// updates point
+	pointObject->Pos = { posX, posY + tt, posZ };
+
+	// todo remove deadcode
+	//XMStoreFloat4x4(&geoObject->position, XMMatrixScaling(10, 10, 10) * XMMatrixTranslation(posX, posY + tt, posZ));
+	//geoObject->NumFramesDirty = gNumFrameResources;
+
 	tt += 0.0f;
 	Pattern_1();
 }
@@ -51,7 +60,10 @@ float Boss::GetSpawnRate()
 void Boss::Pattern_1()
 {
 	XMFLOAT3 playerPos = playerObject->GetPosition3f();
-	XMFLOAT3 bossPos = XMFLOAT3(geoObject->position._41, geoObject->position._42, geoObject->position._43);
+
+	// remove deadcode
+	//XMFLOAT3 bossPos =  XMFLOAT3(geoObject->position._41, geoObject->position._42, geoObject->position._43);
+	XMFLOAT3 bossPos = pointObject->Pos;
 
 	//d = ((x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2) * 0.5    
 

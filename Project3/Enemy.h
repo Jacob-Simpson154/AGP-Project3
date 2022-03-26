@@ -12,6 +12,8 @@ using namespace DirectX;
 using namespace DirectX::PackedVector;
 using namespace std;
 
+
+
 class Enemy
 {
 	public:
@@ -26,7 +28,7 @@ class Enemy
 	//private:
 		int hp;
 		int stage;
-		RenderItem* geoObject;
+		//RenderItem* geoObject;
 		Camera* playerObject;
 		BoundingBox* hitbox;
 		float tX = 0, tY, tZ, tt = 0;
