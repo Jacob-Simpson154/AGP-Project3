@@ -141,6 +141,7 @@ namespace gc
 	// adapt if frame rsc geoPointVB changes
 
 	// number of points per geometry passed to gs
+	// update Application:: 	std::array<BoundingBox, 32> mobBox; to match  NUM_ENEMIES
 	const uint32_t NUM_GEO_POINTS[4]
 	{
 		1u, //NUM_BOSS
@@ -148,6 +149,7 @@ namespace gc
 		100U,//NUM_PARTICLES
 		32U  //NUM_SCENERY
 	};
+
 
 	// no filenames
 	const ObjData GEO_POINT_NAME[4] = {

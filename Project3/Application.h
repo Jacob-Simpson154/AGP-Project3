@@ -221,7 +221,8 @@ private:
 	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
 	void UpdateMovement();
-	void SpawnEnemy();
+	void SpawnEnemy(const XMFLOAT3& pos = {-5.0f,5.0f,0.0f}, const XMFLOAT3& scale = { 03.0f,03.0f,03.0f });
+	void SwawnBoss(const XMFLOAT3& pos = { 0.0f,0.0f,0.0f }, const XMFLOAT3& scale = { 10.0f,10.0f,10.0f });
 	void CheckCameraCollision();
 	void PlayFootAudio(float);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
@@ -280,7 +281,9 @@ private:
 
 	AudioSystem mGameAudio;
 
-	BoundingBox bossBox;
+	//BoundingBox bossBox; // todo remove ...
+	// boss at [0] mobs bb at [i+1]
+	//std::array<BoundingBox, 32+1> mobBox;
 	std::vector<BoundingBox> mobBox;
 	BoundingBox ammoBox[4];
 	BoundingBox healthBox[4];
@@ -328,4 +331,8 @@ private:
 	ParticleSys particleCtrl;
 
 	Animation tempAnim;
+
+
+	//
+	uint32_t enemySpawnIndex = 0;
 };
