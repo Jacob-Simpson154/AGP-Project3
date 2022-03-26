@@ -422,7 +422,6 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	{
 		mLastMousePos.x = x;
 		mLastMousePos.y = y;
-		mouse->Get().SetVisible(false);
 
 		mGameAudio.Play("evilMusic");
 
