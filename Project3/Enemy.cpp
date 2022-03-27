@@ -15,20 +15,11 @@ Enemy::~Enemy()
 
 }
 
-//void Enemy::Setup(int s, int health, RenderItem* geo)
-//{
-//	stage = s;
-//	hp = health;
-//	geoObject = geo;
-//}
-
 bool Enemy::DealDamage(int damage)
 {
 	hp -= damage;
-	if (hp <= 0)
-		return true;
-		//geoObject->material
-	else return false;
+	isActive = hp > 0;
+	return hp <= 0;
 }
 
 void Enemy::FollowTarget(XMFLOAT3 targetPos)

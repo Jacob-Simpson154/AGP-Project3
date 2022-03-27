@@ -11,7 +11,6 @@ public:
 	void Enemy::Movement();
 	void Enemy::Update();
 	//void Enemy::Setup(int stage, int health, RenderItem* geo);
-	bool isActive = false;
 private:
 	Point* pointObject = nullptr;
 };

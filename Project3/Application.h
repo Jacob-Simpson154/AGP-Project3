@@ -221,9 +221,10 @@ private:
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
-	void UpdateMovement();
+	void UpdateEnemies();
 	void SpawnEnemy(const XMFLOAT3& pos = {-5.0f,5.0f,0.0f}, const XMFLOAT3& scale = { 03.0f,03.0f,03.0f });
-	void SwawnBoss(const XMFLOAT3& pos = { 0.0f,0.0f,0.0f }, const XMFLOAT3& scale = { 10.0f,10.0f,10.0f });
+	void SpawnBoss(const XMFLOAT3& pos = { 0.0f,0.0f,0.0f }, const XMFLOAT3& scale = { 10.0f,10.0f,10.0f });
+	void BuildEnemyObjects();
 	void CheckCameraCollision();
 	void PlayFootAudio(float);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
@@ -317,6 +318,8 @@ private:
 	float footStepTimer = 0.0f;
 	float footStepInterval = 0.4f;
 	float MAX_POWERUPS = 1.f;
+	float COOLDOWN = 1;
+	bool initialSpawn = true;
 	
 
 	GameplayState gameplayState = GameplayState::Start;

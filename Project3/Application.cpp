@@ -95,36 +95,8 @@ bool Application::Initialize()
 	BuildGeometry();
 	BuildMaterials();
 	BuildRenderItems();
-
-
-	mobBox.resize(gc::NUM_GEO_POINTS[GeoPointIndex::BOSS] + gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
-	mobs.resize(gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
-
-	bossStats.Setup(&mGeoPoints.at(GeoPointIndex::ENEMY).at(0), mCamera, &mobBox.at(0));//Possibly move this somewhere else in order to setup the geometry
-
-	for (size_t i = 0; i < gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]; i++)
-	{
-		assert(i < gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
-
-
-		mobs.at(i).Setup(&mGeoPoints.at(GeoPointIndex::ENEMY).at(i), mCamera, &mobBox.at(1 + i));//Possibly move this somewhere else in order to setup the geometry)
-		// todo remove deadcode																			
-		//mobs.push_back(m);
-		//mobs.at(i).Setup(mAllRitems.at(6 + i).get(), mCamera);//Possibly move this somewhere else in order to setup the geometry
-	}
-
-
-
-
-
-
-	SwawnBoss();
-	SpawnEnemy();
-	SpawnEnemy();
-	SpawnEnemy();
-	SpawnEnemy();
-
-
+	BuildEnemyObjects();
+	SpawnBoss();
 	BuildFrameResources();
 	BuildPSOs();
 
@@ -227,7 +199,7 @@ void Application::Update(const GameTimer& gt)
 
 	AnimateMaterials(gt);
 
-	UpdateMovement();
+	UpdateEnemies();
 
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
@@ -411,7 +383,7 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 		Shoot();
 		//particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], mCamera->GetPosition3f(),5.0f);
 
-		mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
+		//mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
 
 		if (tempCurrentHealth > 0.0f)
 		{
@@ -520,13 +492,12 @@ void Application::AnimateMaterials(const GameTimer& gt)
 
 }
 
-void Application::UpdateMovement()
+void Application::UpdateEnemies()
 {
-	bossStats.Movement();
+	bossStats.Update();
 	for (size_t i = 0; i < mobs.size(); i++) mobs.at(i).Movement();
-	//if (mobs.size() < 5) SpawnEnemy();
 
-	if ((int)GetGameTime() % 8 == 0 && (int)GetGameTime() >= 7) SpawnEnemy();
+	if ((int)GetGameTime() >= 7 && bossStats.SpawnReady()) SpawnEnemy();
 }
 
 void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
@@ -536,26 +507,26 @@ void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
 	position.y += scale.y * 0.5f;
 
 	{
-		if (mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard == BillboardType::NONE)
+		if (mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard == BillboardType::NONE && COOLDOWN <= 0)
 		{
+			COOLDOWN = bossStats.GetSpawnRate();
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Pos = position;
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Size = { scale.x,scale.y };
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard = BillboardType::AXIS_ORIENTATION;
 			mobs.at(enemySpawnIndex).isActive = true;
 
-			enemySpawnIndex = (enemySpawnIndex + 1) % gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY];
-
 			// mob bb offset by +1
-			mobBox.at(enemySpawnIndex+1) = BoundingBox(position, scale);
+			mobBox.at(enemySpawnIndex + 1) = BoundingBox(position, XMFLOAT3(scale.x, scale.y, scale.z));
+
+			enemySpawnIndex = (enemySpawnIndex + 1) % gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY];
 		}
+		COOLDOWN -= mTimer.DeltaTime();
 
 		
 	}
-
-	
 }
 
-void Application::SwawnBoss(const XMFLOAT3& pos, const XMFLOAT3& scale)
+void Application::SpawnBoss(const XMFLOAT3& pos, const XMFLOAT3& scale)
 {
 	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight(pos, terrainParam);
 	// on ground
@@ -1377,43 +1348,6 @@ void Application::BuildRenderItems()
 	//Build render items here
 	UINT objectCBIndex = 0;
 	
-
-	
-	//todo remove dead code
-	//// boss
-	//auto boss = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Tentacle");
-	//// boss transformations
-	//XMStoreFloat4x4(&boss->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
-	//XMStoreFloat4x4(&boss->texTransform, XMMatrixScaling(1.0f, 1.0f, 1.0f));
-	//mobBox.push_back(BoundingBox(XMFLOAT3(0, 0, 0), scale*.05f));
-
-	//// Mobs
-	//auto mob_1 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-	//// mob transformations
-	//XMStoreFloat4x4(&mob_1->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(-5, 5, 0));
-	//XMStoreFloat4x4(&mob_1->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	////mobBox.push_back(BoundingBox(XMFLOAT3(-5, 5, 0), XMFLOAT3(1, 1, 1)));
-	//mobBox.push_back(BoundingBox(XMFLOAT3(-5, 5, 0), scale*0.18f));
-	//XMFLOAT3 tt = mobBox.at(1).Extents;
-
-	////auto mob_2 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-	////// mob transformations
-	////XMStoreFloat4x4(&mob_2->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(5, 5, 0));
-	////XMStoreFloat4x4(&mob_2->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	////mobBox.push_back(BoundingBox(XMFLOAT3(5, 5, 0), scale * .25f));
-
-	////auto mob_3 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-	////// mob transformations
-	////XMStoreFloat4x4(&mob_3->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, -5));
-	////XMStoreFloat4x4(&mob_3->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	////mobBox.push_back(BoundingBox(XMFLOAT3(0, 5, -5), scale * .25f));
-
-	////auto mob_4 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
-	////// mob transformations
-	////XMStoreFloat4x4(&mob_4->position, XMMatrixScaling(1, 1, 1) * XMMatrixTranslation(0, 5, 5));
-	////XMStoreFloat4x4(&mob_4->texTransform, XMMatrixScaling(0.5f, 0.5f, 0.5f));
-	////mobBox.push_back(BoundingBox(XMFLOAT3(0, 5, 5), scale * .25f));
-	
 	//Border visual (temp)
 	{
 		auto border_01 = BuildRenderItem(objectCBIndex, "boxGeo", "box", "FenceMat");
@@ -1705,23 +1639,6 @@ void Application::BuildRenderItems()
 		
 
 	}
-
-	// render items to layer
-	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(boss.get());
-
-	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_1.get());
-	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_2.get());
-	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_3.get());
-	//mRitemLayer[(int)RenderLayer::Enemy].emplace_back(mob_4.get());
-
-	// render items to all render items
-	//mAllRitems.push_back(std::move(boss));
-	//mAllRitems.push_back(std::move(mob_1));
-	//mAllRitems.push_back(std::move(mob_2));
-	//mAllRitems.push_back(std::move(mob_3));
-	//mAllRitems.push_back(std::move(mob_4));
-	
-
 }
 
 /// <summary>
@@ -1846,6 +1763,21 @@ void Application::BuildObjGeometry(const std::string& filepath, const std::strin
 	}
 }
 
+void Application::BuildEnemyObjects()
+{
+	mobBox.resize(gc::NUM_GEO_POINTS[GeoPointIndex::BOSS] + gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
+	mobs.resize(gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
+
+	bossStats.Setup(&mGeoPoints.at(GeoPointIndex::ENEMY).at(0), mCamera, &mobBox.at(0));//Possibly move this somewhere else in order to setup the geometry
+
+	for (size_t i = 0; i < gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]; i++)
+	{
+		assert(i < gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
+
+		mobs.at(i).Setup(&mGeoPoints.at(GeoPointIndex::ENEMY).at(i), mCamera, &mobBox.at(1 + i));
+	}
+}
+
 void Application::Shoot()
 {
 	if (currentGun.CanShoot())
@@ -1869,7 +1801,7 @@ void Application::Shoot()
 			bool isBoss = i == 0;
 			size_t pointIndex = (isBoss) ? i : i - 1;
 			size_t bbIndex = i;
-			// 
+
 			Point* p = (i == 0) ? &mGeoPoints.at(GeoPointIndex::BOSS).at(0) : &mGeoPoints.at(GeoPointIndex::ENEMY).at(pointIndex);
 
 
@@ -1890,7 +1822,7 @@ void Application::Shoot()
 			{
 				if (mobBox.at(bbIndex).Intersects(rayOrigin, rayDir, tmin))
 				{
-					mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
+					//mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
 					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { bossStats.posX, bossStats.posY, bossStats.posZ }, 5.0f);
 					
 
@@ -1907,7 +1839,6 @@ void Application::Shoot()
 				// mobs
 				if (mobBox.at(bbIndex).Intersects(rayOrigin, rayDir, tmin))
 				{
-					
 					mGameAudio.Play("EnemyTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
 					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { mobs.at(pointIndex).posX, mobs.at(pointIndex).posY , mobs.at(pointIndex).posZ }, 5.0f);
 

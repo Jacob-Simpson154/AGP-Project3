@@ -36,4 +36,5 @@ class Enemy
 		float posX = 0.0f;
 		float posY = 5.0f;
 		float posZ = 0.0f;
+		bool isActive = false;
 };

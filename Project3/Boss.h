@@ -12,16 +12,12 @@ public:
 	void Enemy::Movement();
 	void Enemy::Update();
 	void Pattern_1();
-	float GetSpawnRate();
+	void Pattern_2();
+	void Pattern_3();
+	int GetSpawnRate();
 	bool SpawnReady();
-	//void Enemy::Setup(int stage, int health, RenderItem* geo);
-	/*void UpdateMovement();*/
 private:
-	/*int health = 100;
-	int stage;
-	RenderItem* geoObject;
-	float tt = 0;*/
 	bool spawn;
-	float spawnRate = 1;
+	int spawnRate = 8;
 	Point* pointObject;
 };

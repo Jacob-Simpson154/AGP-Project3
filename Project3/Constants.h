@@ -227,4 +227,5 @@ namespace gc
 
 
 	const int BOSS_MAX_HEALTH = 100;
+	//float COOLDOWN = 1;
 }
