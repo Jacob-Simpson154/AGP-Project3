@@ -438,11 +438,13 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
 	bool isWalking = false;
-	const float speed = 1.0f;
+	float speed = sprint.sprintScale;
+	sprint.isSprinting = false;
 
 	if (GetAsyncKeyState(VK_LSHIFT) & 0x8000)
 	{
-		
+		sprint.isSprinting = true;
+		sprint.Update(playerStamina.current);
 	}
 
 	if (GetAsyncKeyState('W') & 0x8000)
@@ -480,6 +482,7 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 
 	mCamera->UpdateViewMatrix();
 	cameraBox.Center = mCamera->GetPosition3f();
+	sprint.Update(playerStamina.current);
 	CheckCameraCollision();
 	if (isWalking == true)
 		PlayFootAudio(dt);

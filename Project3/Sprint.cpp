@@ -1,5 +1,6 @@
 #include "Sprint.h"
 
+
 Sprint::Sprint()
 {
 
@@ -10,14 +11,16 @@ Sprint::~Sprint()
 
 }
 
-void Sprint::Update()
+void Sprint::Update(float stamina)
 {
 	if (isSprinting == true)
 	{
-		maxSprint--;
+		sprintScale = 2.0f;
+		stamina--;
 	}
-	else if (isSprinting == false && maxSprint > 200.0f)
+	else if (isSprinting == false)
 	{
-		maxSprint++;
+		sprintScale = 1.0f;
+		stamina++;
 	}
 }

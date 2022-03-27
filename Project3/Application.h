@@ -340,6 +340,8 @@ private:
 	Stat playerStamina;
 	Stat bossHealth;
 
+	Sprint sprint;
+
 	Countdown countdown;
 	ParticleSys particleCtrl;
 

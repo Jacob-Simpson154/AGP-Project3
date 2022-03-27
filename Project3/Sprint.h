@@ -1,12 +1,11 @@
 
-
 class Sprint
 {
 public:
 	Sprint();
 	~Sprint();
-	bool isSprinting = false;
-	void Update();
-	float maxSprint = 200.0f;
-	float sprintScale = 2.0f; //Sprint speed, can be changed
+	bool isSprinting;
+	void Update(float);
+	//float maxSprint = 100.0f;
+	float sprintScale = 1.0f; //Sprint speed, can be changed
 };
