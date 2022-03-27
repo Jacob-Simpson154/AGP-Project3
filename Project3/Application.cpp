@@ -153,7 +153,7 @@ void Application::Update(const GameTimer& gt)
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
 
-	if (mobs.at(0).DealDamage(0))
+	if (bossStats.DealDamage(0))
 	{
 		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, true);
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
