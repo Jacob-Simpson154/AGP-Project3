@@ -658,6 +658,13 @@ void Application::LoadTextures()
 	LoadTexture(L"Data/Textures/terrain3.dds", "terrainTex");
 	LoadTexture(L"Data/Textures/WireFence.dds", "fenceTex");
 	LoadTexture(L"Data/Textures/ui.dds", "uiTex");
+
+	LoadTexture(L"Data/Textures/AGP3HealthBox.dds", "healthBoxTex");
+	LoadTexture(L"Data/Textures/AGP3AmmoBox.dds", "ammoBoxTex");
+	LoadTexture(L"Data/Textures/AGP3ShieldBox.dds", "shieldBoxTex");
+	LoadTexture(L"Data/Textures/AGP3SpeedBox.dds", "speedBoxTex");
+	LoadTexture(L"Data/Textures/AGP3QuadBox.dds", "quadBoxTex");
+	LoadTexture(L"Data/Textures/AGP3InfiniteBox.dds", "infiniteBoxTex");
 }
 
 void Application::BuildAudio()
@@ -760,7 +767,7 @@ void Application::BuildDescriptorHeaps()
 	// Create the SRV heap.
 	//
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-	srvHeapDesc.NumDescriptors = 6; // includes font sprites
+	srvHeapDesc.NumDescriptors = 12; // includes font sprites
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	ThrowIfFailed(md3dDevice->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&mSrvDescriptorHeap)));
@@ -782,6 +789,19 @@ void Application::BuildDescriptorHeaps()
 	CreateSRV("uiTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);	
 	CreateSRV("fenceTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+
+	CreateSRV("healthBoxTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	CreateSRV("ammoBoxTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	CreateSRV("shieldBoxTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	CreateSRV("speedBoxTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	CreateSRV("quadBoxTex", hDescriptor);
+	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
+	CreateSRV("infiniteBoxTex", hDescriptor);
 	hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 }
 
@@ -1315,6 +1335,13 @@ void Application::BuildMaterials()
 	BuildMaterial(4, "uiMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	BuildMaterial(5, "FenceMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 
+	BuildMaterial(6, "HealthBoxMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(7, "AmmoBoxMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(8, "ShieldBoxMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(9, "SpeedBoxMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(10, "QuadBoxMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	BuildMaterial(11, "InfiniteBoxMat", 0.99f, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+
 }
 
 std::unique_ptr<RenderItem> Application::BuildRenderItem(UINT& objCBindex, const std::string& geoName, const std::string& subGeoName, const std::string& matName, D3D_PRIMITIVE_TOPOLOGY primitiveTopology)
@@ -1386,7 +1413,7 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto ammoCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Black");
+			auto ammoCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "AmmoBoxMat");
 			XMStoreFloat4x4(&ammoCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			ammoBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::AmmoBox].emplace_back(ammoCrate.get());
@@ -1403,7 +1430,7 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto healthCrate= BuildRenderItem(objectCBIndex, "boxGeo", "box", "Red");
+			auto healthCrate= BuildRenderItem(objectCBIndex, "boxGeo", "box", "HealthBoxMat");
 			XMStoreFloat4x4(&healthCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			healthBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::HealthBox].emplace_back(healthCrate.get());
@@ -1420,7 +1447,7 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto shieldCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Orange");
+			auto shieldCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "ShieldBoxMat");
 			XMStoreFloat4x4(&shieldCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			shieldBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::ShieldBox].emplace_back(shieldCrate.get());
@@ -1437,7 +1464,7 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto speedCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Blue");
+			auto speedCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "SpeedBoxMat");
 			XMStoreFloat4x4(&speedCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			speedBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::SpeedBox].emplace_back(speedCrate.get());
@@ -1454,7 +1481,7 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto quadCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Purple");
+			auto quadCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "QuadBoxMat");
 			XMStoreFloat4x4(&quadCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			quadBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::QuadBox].emplace_back(quadCrate.get());
@@ -1471,7 +1498,7 @@ void Application::BuildRenderItems()
 			position = ApplyTerrainHeight(position, terrainParam);
 			position.y += 0.8f;
 
-			auto infiniteCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "Green");
+			auto infiniteCrate = BuildRenderItem(objectCBIndex, "boxGeo", "box", "InfiniteBoxMat");
 			XMStoreFloat4x4(&infiniteCrate->position, XMMatrixScaling(scale.x, scale.y, scale.z) * XMMatrixTranslation(position.x, position.y, position.z));
 			infiniteBox[i] = BoundingBox(position, scale);
 			mRitemLayer[(int)RenderLayer::InfiniteBox].emplace_back(infiniteCrate.get());
