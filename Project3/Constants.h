@@ -170,26 +170,6 @@ namespace gc
 		{-9.00f,00.00f,00.0f }, // TIME LEFT
 		{-0.40f,00.85f,00.0f }, // STAMINA
 		{-9.00f,00.00f,00.0f }, // BOSS
-		/*
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		{ 0.00f,00.00f,00.0f },
-		*/
-
 	};
 
 
@@ -210,21 +190,21 @@ namespace gc
 		COUNT
 	};
 
-	const float ANIM_TEXTURE_DIM = 1.0f / 1024.0f;
+	const float ANIM_TEXTURE_DIM = 1.0f / 96.0f;
 
 	// left, top, width, height
 	const NoramlisedAnimData ANIM_DATA[AnimIndex::COUNT]
 	{
-		// * ANIM_TEXTURE_DIM normalies texcoord for uv
-		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(00.0f,00.0f,00.0f,00.0f) * ANIM_TEXTURE_DIM,	032.0f * ANIM_TEXTURE_DIM,		3,	true,	true	},
+		// * ANIM_TEXTURE_DIM to normalies texcoord and offset for uv
+		// initial float rect(l,t,w,h), offset, numFrames, loop, animating
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
 	};
-
 
 	const int BOSS_MAX_HEALTH = 100;
 	//float COOLDOWN = 1;
