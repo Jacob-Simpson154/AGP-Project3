@@ -679,7 +679,7 @@ void Application::LoadTexture(const std::wstring& filename, const std::string& n
 void Application::LoadTextures()
 {
 	LoadTexture(L"Data/Textures/white1x1.dds", "tex");
-	LoadTexture(L"Data/Textures/Tentacle.dds", "tempTex");
+	LoadTexture(L"Data/Textures/spritesheet.dds", "tempTex");
 	LoadTexture(L"Data/Textures/obstacle.dds", "houseTex");
 	LoadTexture(L"Data/Textures/terrain3.dds", "terrainTex");
 	LoadTexture(L"Data/Textures/WireFence.dds", "fenceTex");

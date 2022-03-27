@@ -77,7 +77,7 @@ namespace gc
 	// pos -1 to 1 in xy
 	const ObjData UI_SPRITE_DATA[NUM_UI_SPRITES]
 	{
-		"Data/Models/UI_Controls.obj", "uiControlGeo", "uiControl",					{00.60f,-0.70f,01.00f},
+		"Data/Models/UI_Controls.obj", "uiControlGeo", "uiControl",					{00.40f,-0.80f,01.00f},
 		"Data/Models/UI_FinWin.obj", "uiFinWinGeo", "uiFinWin",						{00.00f,00.00f,00.00f},
 		"Data/Models/UI_FinLose.obj", "uiFinLoseGeo", "uiFinLose",					{00.00f,00.00f,00.00f},
 
@@ -114,9 +114,9 @@ namespace gc
 	// words available in texture
 	const int UI_NUM_WORD = 20;
 
-	const size_t UI_LINE_1_LEN = 12;
-	const size_t UI_LINE_2_LEN = 12;
-	const size_t UI_LINE_3_LEN = 12;
+	const size_t UI_LINE_1_LEN = 8;
+	const size_t UI_LINE_2_LEN = 8;
+	const size_t UI_LINE_3_LEN = 8;
 	// number of chars render items
 	const size_t UI_NUM_RITEM_CHAR = UI_LINE_3_LEN + UI_LINE_1_LEN + UI_LINE_2_LEN;
 	// number of words render items
@@ -181,29 +181,23 @@ namespace gc
 
 	enum AnimIndex {
 		ENEMY_IDLE,
-		ENEMY_DIE,
 		BOSS_IDLE,
-		BOSS_DIE,
 		PARTICLE_PURPLE,
 		PARTICLE_BLUE,
-		GUN,
 		COUNT
 	};
 
-	const float ANIM_TEXTURE_DIM = 1.0f / 96.0f;
+	const float ANIM_TEXTURE_DIM = 1.0f / 1024.0f;
 
 	// left, top, width, height
 	const NoramlisedAnimData ANIM_DATA[AnimIndex::COUNT]
 	{
 		// * ANIM_TEXTURE_DIM to normalies texcoord and offset for uv
 		// initial float rect(l,t,w,h), offset, numFrames, loop, animating
-		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
-		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,00.5f,00.5f) ,	0.5f,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0128.0f,0032.0f,0032.0f) * ANIM_TEXTURE_DIM,	0032.0f * ANIM_TEXTURE_DIM,		2,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0000.0f,0064.0f,0064.0f) * ANIM_TEXTURE_DIM,	0064.0f * ANIM_TEXTURE_DIM,		6,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0160.0f,0008.0f,0008.0f) * ANIM_TEXTURE_DIM,	0008.0f * ANIM_TEXTURE_DIM,		4,	true,	true	},
+		{ DirectX::SimpleMath::Vector4(0000.0f,0168.0f,0000.0f,0000.0f) * ANIM_TEXTURE_DIM,	0008.0f * ANIM_TEXTURE_DIM,		2,	true,	true	},
 	};
 
 	const int BOSS_MAX_HEALTH = 100;

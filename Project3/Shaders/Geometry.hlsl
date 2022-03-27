@@ -174,7 +174,7 @@ void BillboardingSingleFixed(VertexOut gin, inout TriangleStream<GeomOut> triStr
     {
         output.PosH = mul(float4(v[i],1.0f), gViewProj);
         output.PosW = v[i].xyz;
-        output.NormalW = float3(0.0f, 0.0f, 1.0f);
+        output.NormalW = float3(0.0f, 0.0f, -1.0f);
         
         output.TexC = uv[i];
         triStream.Append(output);
@@ -217,8 +217,7 @@ void BillboardingAxisOrientation(VertexOut gin, inout TriangleStream<GeomOut> tr
     {
         output.PosH = mul(float4(v[i]), gViewProj);
         output.PosW = v[i].xyz;
-        output.NormalW = float3(0.0f, 0.0f, 1.0f);
-        
+        output.NormalW = look;
         output.TexC = uv[i];
         triStream.Append(output);
     }
@@ -300,7 +299,7 @@ float4 PS(GeomOut pin) : SV_Target
         pin.NormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
-
+    litColor = min(litColor, diffuseAlbedo);
     // Common convention to take alpha from diffuse albedo.
     litColor.a = diffuseAlbedo.a;
     

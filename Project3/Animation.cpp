@@ -9,7 +9,7 @@ void Animation::SetAnimation(const NoramlisedAnimData* pAnimData, DirectX::XMFLO
 {
 	assert(pAnimData);
 	pData = pAnimData;
-
+	
 	if (pDest)
 	{
 		pDestination = pDest;
