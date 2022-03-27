@@ -289,17 +289,9 @@ private:
 	std::vector<BoundingBox> mobBox;
 	BoundingBox ammoBox[4];
 	BoundingBox healthBox[4];
-	BoundingBox shieldBox[4];
-	BoundingBox speedBox[4];
-	BoundingBox quadBox[4];
-	BoundingBox infiniteBox[4];
 	BoundingBox obstBox[gc::NUM_OBSTACLE];
 	AmmoBox ammoBoxClass[4];
 	HealthBox healthBoxClass[4];
-	ShieldPowerup shieldBoxClass[1];
-	SpeedPowerup speedBoxClass[1];
-	QuadPowerup quadBoxClass[1];
-	InfinitePowerup infiniteBoxClass[1];
 	BoundingBox cameraBox;
 
 	Boss bossStats;
@@ -317,10 +309,27 @@ private:
 	float mAudioVolume = 0.3f;
 	float footStepTimer = 0.0f;
 	float footStepInterval = 0.4f;
-	float MAX_POWERUPS = 1.f;
 	float COOLDOWN = 1;
 	bool initialSpawn = true;
-	
+
+
+	BoundingBox shieldBox[4];
+	BoundingBox speedBox[4];
+	BoundingBox quadBox[4];
+	BoundingBox infiniteBox[4];
+	ShieldPowerup shieldBoxClass[4];
+	SpeedPowerup speedBoxClass[4];
+	QuadPowerup quadBoxClass[4];
+	InfinitePowerup infiniteBoxClass[4];
+	float MAX_POWERUPS = 4.f;
+	bool shieldActive = false;
+	bool speedActive = false;
+	bool quadActive = false;
+	bool infiniteActive = false;
+	float shieldTimer;
+	float speedTimer;
+	float quadTimer;
+	float infiniteTimer;
 
 	GameplayState gameplayState = GameplayState::Start;
 

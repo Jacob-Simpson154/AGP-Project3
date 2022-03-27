@@ -1784,7 +1784,10 @@ void Application::Shoot()
 	{
 		mGameAudio.Play("PlayerShoot", nullptr, false, mAudioVolume, RandomPitchValue());
 
-		currentGun.Shoot();
+		if (!infiniteActive) //Check To See If InfAmmo Is Active, If It Is Don't Decrease Ammo
+		{
+			currentGun.Shoot(); //Just Decreases Ammo Count
+		}
 
 		XMFLOAT4X4 P = mCamera->GetProj4x4f();
 		float vx = (+2.0f * (mClientWidth / 2) / mClientWidth - 1.0f) / P(0, 0);
@@ -1825,11 +1828,21 @@ void Application::Shoot()
 					//mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
 					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { bossStats.posX, bossStats.posY, bossStats.posZ }, 5.0f);
 					
-
-					if (bossStats.DealDamage(currentGun.GetDamage()))
+					if (!quadActive) //Normal Damage Calculations
 					{
-						p->Billboard = BillboardType::NONE;
+						if (bossStats.DealDamage(currentGun.GetDamage()))
+						{
+							p->Billboard = BillboardType::NONE;
+						}
 					}
+					else //Quad Damage Calculations
+					{
+						if (bossStats.DealDamage(currentGun.GetDamage() * 4))
+						{
+							p->Billboard = BillboardType::NONE;
+						}
+					}
+
 
 				}
 			}
@@ -2004,6 +2017,8 @@ void Application::CheckCameraCollision()
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
 			//Quad Damage - x4 Damage For N Seconds
+			quadActive = true;
+			//Start Timer Here \[T]/
 			quadBoxClass[counter].Consume();
 		}
 	}
@@ -2024,6 +2039,8 @@ void Application::CheckCameraCollision()
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
 			//Infinite Ammo - Unlimited Ammo + No Reload For N Seconds
+			infiniteActive = true;
+			//Start Timer Here \[T]/
 			infiniteBoxClass[counter].Consume();
 		}
 	}
