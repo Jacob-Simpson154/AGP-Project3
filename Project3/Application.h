@@ -221,7 +221,7 @@ private:
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	void BuildObjGeometry(const std::string& filepath, const std::string& meshName, const std::string& subMeshName);
 	void Shoot();
-	void UpdateEnemies();
+	void UpdateEnemies(float dt);
 	void SpawnEnemy(const XMFLOAT3& pos = {-5.0f,5.0f,0.0f}, const XMFLOAT3& scale = { 03.0f,03.0f,03.0f });
 	void SpawnBoss(const XMFLOAT3& pos = { 0.0f,0.0f,0.0f }, const XMFLOAT3& scale = { 10.0f,10.0f,10.0f });
 	void BuildEnemyObjects();
@@ -341,5 +341,9 @@ private:
 	uint32_t enemySpawnIndex = 0;
 
 	std::unique_ptr<Mouse> mouse;
+
+	std::vector<Animation> mobAnims;
+	Animation bossAnim;
+	std::vector<Animation> particleAnims;
 	
 };

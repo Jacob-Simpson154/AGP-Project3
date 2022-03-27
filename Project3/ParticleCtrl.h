@@ -1,8 +1,11 @@
+#pragma once
+
 #include "SimpleMath.h"
 //#include "FrameResource.h"
 #include <deque>
 #include <vector>
-#pragma once
+#include "Animation.h"
+
 
 struct Point;
 

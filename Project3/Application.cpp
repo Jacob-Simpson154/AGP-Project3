@@ -97,6 +97,8 @@ bool Application::Initialize()
 	BuildRenderItems();
 	BuildEnemyObjects();
 	SpawnBoss();
+	SpawnEnemy();
+	SpawnEnemy({0,0,0});
 	BuildFrameResources();
 	BuildPSOs();
 
@@ -158,18 +160,7 @@ void Application::Update(const GameTimer& gt)
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
 
-	{
-		Vector3 bossPos = ApplyTerrainHeight({ bossStats.posX,bossStats.posY,bossStats.posZ },terrainParam);
-		bossPos.y += 10.5f;
-		bossStats.posY = bossPos.y;
-	}
 
-	for (size_t i = 0; i < mobs.size(); i++)
-	{
-		Vector3 mp = ApplyTerrainHeight({ mobs.at(i).posX, mobs.at(i).posY, mobs.at(i).posZ }, terrainParam);
-		mp.y +=  0.5f;
-		mobs.at(i).posY = mp.y;
-	}
 
 	countdown.Update(gt.DeltaTime());
 
@@ -181,8 +172,6 @@ void Application::Update(const GameTimer& gt)
 	spriteCtrl[gc::SPRITE_HEALTH_PLAYER_GRN].SetXScale(this,playerHealth.Normalise(),gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this, (float)bossStats.hp / (float)gc::BOSS_MAX_HEALTH,gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,playerStamina.Normalise(),gt.DeltaTime());
-
-	
 
 	// todo pass in appropriate values (positive floats only)
 	pointsDisplay.Update(this, gt.DeltaTime(), 0.0f);
@@ -199,12 +188,17 @@ void Application::Update(const GameTimer& gt)
 
 	AnimateMaterials(gt);
 
-	UpdateEnemies();
+
+	for (size_t i = 0; i < gc::NUM_GEO_POINTS[GeoPointIndex::PARTICLE]; i++)
+	{
+		particleAnims.at(i).Update(gt.DeltaTime());
+	}
+
+	UpdateEnemies(gt.DeltaTime());
 
 	UpdateObjectCBs(gt);
 	UpdateMaterialBuffer(gt);
 	UpdateMainPassCB(gt);
-	//
 	UpdatePoints(gt);
 
 
@@ -492,12 +486,49 @@ void Application::AnimateMaterials(const GameTimer& gt)
 
 }
 
-void Application::UpdateEnemies()
+void Application::UpdateEnemies(float dt)
 {
-	bossStats.Update();
-	for (size_t i = 0; i < mobs.size(); i++) mobs.at(i).Movement();
+	// updateboss
+	{
+		Vector3 bossPos = ApplyTerrainHeight({ bossStats.posX,bossStats.posY,bossStats.posZ }, terrainParam);
+		bossPos.y += 10.5f;
+		bossStats.posY = bossPos.y;
+		bossAnim.Update(dt);
 
-	if ((int)GetGameTime() >= 7 && bossStats.SpawnReady()) SpawnEnemy();
+		bossStats.Update();
+	}
+
+	assert(mobs.size() == mobAnims.size());
+
+
+	for (size_t i = 0; i < mobs.size(); i++)
+	{
+		Vector3 mp = ApplyTerrainHeight({ mobs.at(i).posX, mobs.at(i).posY, mobs.at(i).posZ }, terrainParam);
+		mp.y += 0.5f;
+		mobs.at(i).posY = mp.y;
+
+
+
+		mobAnims.at(i).Update(dt);
+	}
+
+	for (size_t i = 0; i < mobs.size(); i++)
+	{
+		mobs.at(i).Movement();
+	}
+
+	if ((int)GetGameTime() >= 7 && bossStats.SpawnReady())
+	{
+		SpawnEnemy();
+	}
+		
+
+
+
+
+
+
+
 }
 
 void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
@@ -509,15 +540,16 @@ void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
 	{
 		if (mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard == BillboardType::NONE && COOLDOWN <= 0)
 		{
-			COOLDOWN = bossStats.GetSpawnRate();
+			COOLDOWN = (float)bossStats.GetSpawnRate();
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Pos = position;
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Size = { scale.x,scale.y };
+
+			mobAnims.at(enemySpawnIndex).SetAnimation(&gc::ANIM_DATA[gc::AnimIndex::ENEMY_IDLE], &mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).TexRect);
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard = BillboardType::AXIS_ORIENTATION;
 			mobs.at(enemySpawnIndex).isActive = true;
 
 			// mob bb offset by +1
 			mobBox.at(enemySpawnIndex + 1) = BoundingBox(position, XMFLOAT3(scale.x, scale.y, scale.z));
-
 			enemySpawnIndex = (enemySpawnIndex + 1) % gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY];
 		}
 		COOLDOWN -= mTimer.DeltaTime();
@@ -531,9 +563,10 @@ void Application::SpawnBoss(const XMFLOAT3& pos, const XMFLOAT3& scale)
 	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight(pos, terrainParam);
 	// on ground
 	position.y += scale.y * 0.5f;
-
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Pos = position;
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Size = { scale.x,scale.y };
+
+	bossAnim.SetAnimation(&gc::ANIM_DATA[gc::AnimIndex::BOSS_IDLE], &mGeoPoints.at(GeoPointIndex::BOSS).at(0).TexRect);
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Billboard = BillboardType::AXIS_ORIENTATION;
 	mobBox.at(0) = BoundingBox(position, scale);
 }
@@ -1766,6 +1799,8 @@ void Application::BuildObjGeometry(const std::string& filepath, const std::strin
 void Application::BuildEnemyObjects()
 {
 	mobBox.resize(gc::NUM_GEO_POINTS[GeoPointIndex::BOSS] + gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
+	particleAnims.resize(gc::NUM_GEO_POINTS[GeoPointIndex::PARTICLE]);
+	mobAnims.resize(gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
 	mobs.resize(gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
 
 	bossStats.Setup(&mGeoPoints.at(GeoPointIndex::ENEMY).at(0), mCamera, &mobBox.at(0));//Possibly move this somewhere else in order to setup the geometry
@@ -1775,6 +1810,15 @@ void Application::BuildEnemyObjects()
 		assert(i < gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY]);
 
 		mobs.at(i).Setup(&mGeoPoints.at(GeoPointIndex::ENEMY).at(i), mCamera, &mobBox.at(1 + i));
+
+		mobAnims.at(i).SetAnimation(&gc::ANIM_DATA[gc::AnimIndex::ENEMY_IDLE], &mGeoPoints.at(GeoPointIndex::ENEMY).at(i).TexRect);
+	}
+	assert(mobs.size() == mobAnims.size());
+
+	// particle
+	for (size_t i = 0; i < gc::NUM_GEO_POINTS[GeoPointIndex::PARTICLE]; i++)
+	{
+		particleAnims.at(i).SetAnimation(&gc::ANIM_DATA[gc::AnimIndex::PARTICLE_PURPLE], &mGeoPoints.at(GeoPointIndex::PARTICLE).at(i).TexRect);
 	}
 }
 
