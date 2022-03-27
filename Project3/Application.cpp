@@ -170,12 +170,12 @@ void Application::Update(const GameTimer& gt)
 	bossHealth.Update(gt);
 	
 	particleCtrl.Update(&mGeoPoints.at(GeoPointIndex::PARTICLE), gt.DeltaTime());
-	spriteCtrl[gc::SPRITE_HEALTH_PLAYER_GRN].SetXScale(this,playerHealth.Normalise(),gt.DeltaTime());
-	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this, (float)bossStats.hp / (float)gc::BOSS_MAX_HEALTH,gt.DeltaTime());
-	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,playerStamina.Normalise(),gt.DeltaTime());
+	spriteCtrl[gc::SPRITE_HEALTH_PLAYER_GRN].SetXScale(this,max(playerHealth.Normalise(),0.0f),gt.DeltaTime());
+	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this, max((float)bossStats.hp / (float)gc::BOSS_MAX_HEALTH,0.0f),gt.DeltaTime());
+	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,max(playerStamina.Normalise(),0.0f),gt.DeltaTime());
 
 	// todo pass in appropriate values (positive floats only)
-	pointsDisplay.Update(this, gt.DeltaTime(), 0.0f);
+	pointsDisplay.Update(this, gt.DeltaTime(), points);
 	timeDisplay.Update(this, gt.DeltaTime(), countdown.timeLeft);
 	ammoDisplay.Update(this, gt.DeltaTime(), currentGun.GetLoadedAmmo());
 
@@ -377,7 +377,6 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	{
 		Shoot();
 		//particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], mCamera->GetPosition3f(),5.0f);
-
 		//mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
 
 		if (tempCurrentHealth > 0.0f)
@@ -469,6 +468,16 @@ void Application::OnKeyboardInput(const GameTimer& gt)
 	{
 		mGameAudio.Play("Pickup", nullptr, false, mAudioVolume, RandomPitchValue());
 		currentGun.Reload();
+	}
+
+	if (GetAsyncKeyState('M') & 0x8000)
+	{
+		mMainPassCB.Shockwaves->Reset({0,0,0});
+	}
+
+	if (GetAsyncKeyState('L') & 0x8000)
+	{
+		mMainPassCB.Shockwaves->Reset(mCamera->GetPosition3f());
 	}
 
 	if (GetAsyncKeyState('P') & 0x8000)
@@ -1890,14 +1899,19 @@ void Application::Shoot()
 			{
 				if (mobBox.at(bbIndex).Intersects(rayOrigin, rayDir, tmin))
 				{
+					if (gameplayState == GameplayState::Playing)
+					{
+						points += mMainPassCB.TotalTime * gc::POINTS_MULTI;
+					}
 					//mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
-					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { bossStats.posX, bossStats.posY, bossStats.posZ }, 5.0f);
+					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { bossStats.posX, bossStats.posY, bossStats.posZ }, 3.0f);
 					
 					if (!quadActive) //Normal Damage Calculations
 					{
 						if (bossStats.DealDamage(currentGun.GetDamage()))
 						{
 							p->Billboard = BillboardType::NONE;
+							points += mMainPassCB.TotalTime * gc::POINTS_MULTI;
 						}
 					}
 					else //Quad Damage Calculations
@@ -1905,9 +1919,9 @@ void Application::Shoot()
 						if (bossStats.DealDamage(currentGun.GetDamage() * 4))
 						{
 							p->Billboard = BillboardType::NONE;
+							points += mMainPassCB.TotalTime * gc::POINTS_MULTI;
 						}
 					}
-
 
 				}
 			}
@@ -1918,11 +1932,12 @@ void Application::Shoot()
 				if (mobBox.at(bbIndex).Intersects(rayOrigin, rayDir, tmin))
 				{
 					mGameAudio.Play("EnemyTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
-					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { mobs.at(pointIndex).posX, mobs.at(pointIndex).posY , mobs.at(pointIndex).posZ }, 5.0f);
+					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { mobs.at(pointIndex).posX, mobs.at(pointIndex).posY , mobs.at(pointIndex).posZ }, 2.0f);
 
 					if (mobs.at(pointIndex).DealDamage(currentGun.GetDamage()))
 					{
 						p->Billboard = BillboardType::NONE;
+						points += mMainPassCB.TotalTime * gc::POINTS_MULTI;
 					}
 				}
 			}

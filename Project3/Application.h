@@ -356,5 +356,5 @@ private:
 	std::vector<Animation> mobAnims;
 	Animation bossAnim;
 	std::vector<Animation> particleAnims;
-	
+	float points = 0.0f;
 };

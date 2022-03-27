@@ -202,4 +202,6 @@ namespace gc
 
 	const int BOSS_MAX_HEALTH = 100;
 	//float COOLDOWN = 1;
+
+	const float POINTS_MULTI = 0.3f;
 }
