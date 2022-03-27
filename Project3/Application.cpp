@@ -152,7 +152,8 @@ void Application::Update(const GameTimer& gt)
 		spriteCtrl[gc::SPRITE_LOSE].SetDisplay(this, true);
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
-	if (!bossHealth.AboveZero())
+
+	if (mobs.at(0).DealDamage(0))
 	{
 		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, true);
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
@@ -1866,44 +1867,6 @@ void Application::Shoot()
 
 
 	}
-
-
-
-	//	int i = 0;
-	//	for (auto ri : mRitemLayer[(int)RenderLayer::Enemy])
-	//	{
-	//		auto geo = ri->geometry;
-
-	//		if (ri->shouldRender == false)
-	//			continue;
-
-	//		XMMATRIX W = XMLoadFloat4x4(&ri->position);
-	//		XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
-
-	//		XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
-
-	//		rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
-	//		rayDir = XMVector3TransformNormal(rayDir, toLocal);
-
-	//		rayDir = XMVector3Normalize(rayDir);
-
-	//		float tmin = 0.0f;
-	//		if (mobBox.at(1).Intersects(rayOrigin, rayDir, tmin))
-	//		{
-	//			mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
-
-
-	//			bool isDead = i == 0 ? bossStats.DealDamage(currentGun.GetDamage()) : mobs.at(i-1).DealDamage(currentGun.GetDamage());
-	//			if (isDead == true)
-	//			{
-	//				ri->material = mMaterials["Grey"].get();
-	//				ri->NumFramesDirty = gNumFrameResources;
-	//			}
-	//			//This entire sequence needs to be handled by the enemy scripts. This can be achieved by giving the access to 'mMaterials'
-	//		}
-	//		i++;
-	//	}
-	//}
 }
 
 void Application::CheckCameraCollision()
