@@ -154,7 +154,8 @@ void Application::Update(const GameTimer& gt)
 		spriteCtrl[gc::SPRITE_LOSE].SetDisplay(this, true);
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
 	}
-	if (!bossHealth.AboveZero())
+
+	if (bossStats.DealDamage(0))
 	{
 		spriteCtrl[gc::SPRITE_WIN].SetDisplay(this, true);
 		spriteCtrl[gc::SPRITE_CROSSHAIR].SetDisplay(this, false);
@@ -1828,7 +1829,10 @@ void Application::Shoot()
 	{
 		mGameAudio.Play("PlayerShoot", nullptr, false, mAudioVolume, RandomPitchValue());
 
-		currentGun.Shoot();
+		if (!infiniteActive) //Check To See If InfAmmo Is Active, If It Is Don't Decrease Ammo
+		{
+			currentGun.Shoot(); //Just Decreases Ammo Count
+		}
 
 		XMFLOAT4X4 P = mCamera->GetProj4x4f();
 		float vx = (+2.0f * (mClientWidth / 2) / mClientWidth - 1.0f) / P(0, 0);
@@ -1869,11 +1873,21 @@ void Application::Shoot()
 					//mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
 					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { bossStats.posX, bossStats.posY, bossStats.posZ }, 5.0f);
 					
-
-					if (bossStats.DealDamage(currentGun.GetDamage()))
+					if (!quadActive) //Normal Damage Calculations
 					{
-						p->Billboard = BillboardType::NONE;
+						if (bossStats.DealDamage(currentGun.GetDamage()))
+						{
+							p->Billboard = BillboardType::NONE;
+						}
 					}
+					else //Quad Damage Calculations
+					{
+						if (bossStats.DealDamage(currentGun.GetDamage() * 4))
+						{
+							p->Billboard = BillboardType::NONE;
+						}
+					}
+
 
 				}
 			}
@@ -1897,44 +1911,6 @@ void Application::Shoot()
 
 
 	}
-
-
-
-	//	int i = 0;
-	//	for (auto ri : mRitemLayer[(int)RenderLayer::Enemy])
-	//	{
-	//		auto geo = ri->geometry;
-
-	//		if (ri->shouldRender == false)
-	//			continue;
-
-	//		XMMATRIX W = XMLoadFloat4x4(&ri->position);
-	//		XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
-
-	//		XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
-
-	//		rayOrigin = XMVector3TransformCoord(rayOrigin, toLocal);
-	//		rayDir = XMVector3TransformNormal(rayDir, toLocal);
-
-	//		rayDir = XMVector3Normalize(rayDir);
-
-	//		float tmin = 0.0f;
-	//		if (mobBox.at(1).Intersects(rayOrigin, rayDir, tmin))
-	//		{
-	//			mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
-
-
-	//			bool isDead = i == 0 ? bossStats.DealDamage(currentGun.GetDamage()) : mobs.at(i-1).DealDamage(currentGun.GetDamage());
-	//			if (isDead == true)
-	//			{
-	//				ri->material = mMaterials["Grey"].get();
-	//				ri->NumFramesDirty = gNumFrameResources;
-	//			}
-	//			//This entire sequence needs to be handled by the enemy scripts. This can be achieved by giving the access to 'mMaterials'
-	//		}
-	//		i++;
-	//	}
-	//}
 }
 
 void Application::CheckCameraCollision()
@@ -2048,6 +2024,8 @@ void Application::CheckCameraCollision()
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
 			//Quad Damage - x4 Damage For N Seconds
+			quadActive = true;
+			//Start Timer Here \[T]/
 			quadBoxClass[counter].Consume();
 		}
 	}
@@ -2068,6 +2046,8 @@ void Application::CheckCameraCollision()
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
 			//Infinite Ammo - Unlimited Ammo + No Reload For N Seconds
+			infiniteActive = true;
+			//Start Timer Here \[T]/
 			infiniteBoxClass[counter].Consume();
 		}
 	}
