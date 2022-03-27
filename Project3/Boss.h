@@ -9,7 +9,7 @@ public:
 	Boss();
 	~Boss();
 	void Setup(Point* geo, Camera* player, BoundingBox* box);
-	void Enemy::Movement();
+	void Enemy::Movement(float dt);
 	void Enemy::Update();
 	void Pattern_1();
 	void Pattern_2();

@@ -28,13 +28,13 @@ void Mob::Setup(Point* geo, Camera* player, BoundingBox* box)
 	pointObject->Pos = { posX, posY, posZ };
 }
 
-void Mob::Movement() 
+void Mob::Movement(float dt) 
 {
 	if (isActive)
 	{
 		assert(hitbox);
 		assert(playerObject);
-		FollowTarget(playerObject->GetPosition3f());
+		FollowTarget(playerObject->GetPosition3f(), dt);
 		pointObject->Pos = { posX, posY, posZ };
 		hitbox->Center = XMFLOAT3(posX, posY, posZ);
 	}

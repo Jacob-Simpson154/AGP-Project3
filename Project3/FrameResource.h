@@ -3,6 +3,7 @@
 #include "Common/d3dUtil.h"
 #include "Common/MathHelper.h"
 #include "Common/UploadBuffer.h"
+#include <SimpleMath.h>
 
 struct ObjectConstants
 {
@@ -131,7 +132,7 @@ struct Point
     DirectX::XMFLOAT2 Size = DirectX::XMFLOAT2(1.0f,1.0f);
     // normalised uv coordinates
     // left,top,width,height
-    DirectX::XMFLOAT4 TexRect = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
+    DirectX::SimpleMath::Vector4 TexRect = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
     // set to none to disable rendering of sprite
     BillboardType Billboard = BillboardType::NONE;
 };

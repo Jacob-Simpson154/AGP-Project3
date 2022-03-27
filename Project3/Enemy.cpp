@@ -22,18 +22,18 @@ bool Enemy::DealDamage(int damage)
 	return hp <= 0;
 }
 
-void Enemy::FollowTarget(XMFLOAT3 targetPos)
+void Enemy::FollowTarget(XMFLOAT3 targetPos, float dt)
 {
-	if (targetPos.x > posX) posX += 0.01f;
-	else if (targetPos.x < posX) posX += -0.01f;
+	if (targetPos.x > posX) posX += (dt * 2);
+	else if (targetPos.x < posX) posX += -(dt * 2);
 	else posX += 0;
 
-	if (targetPos.y > posY) posY += 0.01f;
-	else if (targetPos.y < posY) posY += -0.01f;
+	if (targetPos.y > posY) posY += (dt * 2);
+	else if (targetPos.y < posY) posY += -(dt * 2);
 	else posY += 0;
 
-	if (targetPos.z > posZ) posZ += 0.01f;
-	else if (targetPos.z < posZ) posZ += -0.01f;
+	if (targetPos.z > posZ) posZ += (dt * 2);
+	else if (targetPos.z < posZ) posZ += -(dt * 2);
 	else posZ += 0;
 
 }

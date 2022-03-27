@@ -20,9 +20,9 @@ class Enemy
 		Enemy();
 		~Enemy();
 		bool DealDamage(int damage);
-		void FollowTarget(XMFLOAT3 targetPos);
+		void FollowTarget(XMFLOAT3 targetPos, float dt);
 		/*void Setup(int stage, int health, RenderItem* geo);*/
-		virtual void Movement() = 0;
+		virtual void Movement(float dt) = 0;
 		virtual void Update() = 0;
 
 	//private:
