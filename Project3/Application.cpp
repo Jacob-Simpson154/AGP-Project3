@@ -508,28 +508,18 @@ void Application::UpdateEnemies(float dt)
 		mp.y += 0.5f;
 		mobs.at(i).posY = mp.y;
 
-
-
 		mobAnims.at(i).Update(dt);
 	}
 
 	for (size_t i = 0; i < mobs.size(); i++)
 	{
-		mobs.at(i).Movement();
+		mobs.at(i).Movement(dt);
 	}
 
 	if ((int)GetGameTime() >= 7 && bossStats.SpawnReady())
 	{
 		SpawnEnemy();
 	}
-		
-
-
-
-
-
-
-
 }
 
 void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)

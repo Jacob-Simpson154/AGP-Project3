@@ -27,7 +27,7 @@ void Boss::Setup(Point* geo, Camera* player, BoundingBox* box)
 	hitbox = box;
 }
 
-void Boss::Movement() 
+void Boss::Movement(float dt) 
 {
 	assert(hitbox);
 	// updates point
@@ -50,7 +50,7 @@ void Boss::Movement()
 
 void Boss::Update()
 {
-	Movement();
+	Movement(0);
 	/*if (hp >= 75) Pattern_1();
 	else if (hp >= 50) Pattern_2();
 	else if (hp >= 25) Pattern_3();*/
