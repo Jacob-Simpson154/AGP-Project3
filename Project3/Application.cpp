@@ -80,10 +80,10 @@ bool Application::Initialize()
 	}
 	for (int i = 0; i < MAX_POWERUPS; ++i)
 	{
-		shieldBoxClass[i] = ShieldPowerup(20, 20*i);
-		speedBoxClass[i] = SpeedPowerup(20, 3, 20*i);
-		quadBoxClass[i] = QuadPowerup(20, 4, 20 *i);
-		infiniteBoxClass[i] = InfinitePowerup(15, 20 *i);
+		shieldBoxClass[i] = ShieldPowerup(20, 20*(i+1));
+		speedBoxClass[i] = SpeedPowerup(20, 3, 20*(i+1));
+		quadBoxClass[i] = QuadPowerup(20, 4, 20 *(i+1));
+		infiniteBoxClass[i] = InfinitePowerup(15, 20 *(i+1));
 	}
 
 	BuildAudio();
