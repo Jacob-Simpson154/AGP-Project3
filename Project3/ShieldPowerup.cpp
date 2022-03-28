@@ -5,10 +5,10 @@ ShieldPowerup::ShieldPowerup()
 
 }
 
-ShieldPowerup::ShieldPowerup(float t)
+ShieldPowerup::ShieldPowerup(float t, float s)
 {
 	maxTimeActive = t;
-	timer = TimerInterval(150.0f);
+	timer = TimerInterval(s);
 }
 
 ShieldPowerup::~ShieldPowerup()
@@ -18,7 +18,7 @@ ShieldPowerup::~ShieldPowerup()
 
 float ShieldPowerup::Consume()
 {
-	if (hasBeenConsumed == false)
+	if (hasBeenConsumed == false && hasSpawnedIn == true)
 	{
 		hasBeenConsumed = true;
 		timer.Start();
@@ -29,6 +29,15 @@ float ShieldPowerup::Consume()
 
 void ShieldPowerup::Update(float gt)
 {
+	if (hasSpawnedIn == false)
+	{
+		if (timer.UpdateTimer(gt) == true)
+		{
+			hasSpawnedIn = true;
+			timer.SetInterval(150.0f);
+		}
+	}
+
 	if (hasBeenConsumed == true)
 	{
 		if (timer.UpdateTimer(gt) == true)

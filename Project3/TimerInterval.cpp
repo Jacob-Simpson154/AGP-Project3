@@ -20,6 +20,11 @@ void TimerInterval::Start()
 	hasStarted = true;
 }
 
+void TimerInterval::SetInterval(float t)
+{
+	interval = t;
+}
+
 bool TimerInterval::UpdateTimer(float gt)
 {
 	if (hasStarted == true)

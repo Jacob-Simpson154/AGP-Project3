@@ -5,10 +5,11 @@ HealthBox::HealthBox()
 
 }
 
-HealthBox::HealthBox(float t)
+HealthBox::HealthBox(float t, float s)
 {
 	healthPercentageToRestore = t;
-	timer = TimerInterval(30.0f);
+	timer = TimerInterval(s);
+	timer.Start();
 }
 
 HealthBox::~HealthBox()
@@ -18,7 +19,7 @@ HealthBox::~HealthBox()
 
 float HealthBox::Consume()
 {
-	if (hasBeenConsumed == false)
+	if (hasBeenConsumed == false && hasSpawnedIn == true)
 	{
 		hasBeenConsumed = true;
 		timer.Start();
@@ -29,6 +30,15 @@ float HealthBox::Consume()
 
 void HealthBox::Update(float gt)
 {
+	if (hasSpawnedIn == false)
+	{
+		if (timer.UpdateTimer(gt) == true)
+		{
+			hasSpawnedIn = true;
+			timer.SetInterval(30.0f);
+		}
+	}
+
 	if (hasBeenConsumed == true)
 	{
 		if (timer.UpdateTimer(gt) == true)

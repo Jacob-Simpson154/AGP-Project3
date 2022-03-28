@@ -5,10 +5,11 @@ AmmoBox::AmmoBox()
 
 }
 
-AmmoBox::AmmoBox(float t)
+AmmoBox::AmmoBox(float t, float s)
 {
 	ammoPercentageToRestore = t;
-	timer = TimerInterval(30.0f);
+	timer = TimerInterval(s);
+	timer.Start();
 }
 
 AmmoBox::~AmmoBox()
@@ -18,7 +19,7 @@ AmmoBox::~AmmoBox()
 
 float AmmoBox::Consume()
 {
-	if (hasBeenConsumed == false)
+	if (hasBeenConsumed == false && hasSpawnedIn == true)
 	{
 		hasBeenConsumed = true;
 		timer.Start();
@@ -29,6 +30,15 @@ float AmmoBox::Consume()
 
 void AmmoBox::Update(float gt)
 {
+	if (hasSpawnedIn == false)
+	{
+		if (timer.UpdateTimer(gt) == true)
+		{
+			hasSpawnedIn = true;
+			timer.SetInterval(30.0f);
+		}
+	}
+
 	if (hasBeenConsumed == true)
 	{
 		if (timer.UpdateTimer(gt) == true)

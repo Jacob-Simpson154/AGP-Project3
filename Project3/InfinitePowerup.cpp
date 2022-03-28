@@ -5,10 +5,10 @@ InfinitePowerup::InfinitePowerup()
 
 }
 
-InfinitePowerup::InfinitePowerup(float t)
+InfinitePowerup::InfinitePowerup(float t, float s)
 {
 	maxTimeActive = t;
-	timer = TimerInterval(150.0f);
+	timer = TimerInterval(s);
 }
 
 InfinitePowerup::~InfinitePowerup()
@@ -18,7 +18,7 @@ InfinitePowerup::~InfinitePowerup()
 
 float InfinitePowerup::Consume()
 {
-	if (hasBeenConsumed == false)
+	if (hasBeenConsumed == false && hasSpawnedIn == true)
 	{
 		hasBeenConsumed = true;
 		timer.Start();
@@ -29,6 +29,15 @@ float InfinitePowerup::Consume()
 
 void InfinitePowerup::Update(float gt)
 {
+	if (hasSpawnedIn == false)
+	{
+		if (timer.UpdateTimer(gt) == true)
+		{
+			hasSpawnedIn = true;
+			timer.SetInterval(150.0f);
+		}
+	}
+
 	if (hasBeenConsumed == true)
 	{
 		if (timer.UpdateTimer(gt) == true)

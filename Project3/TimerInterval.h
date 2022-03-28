@@ -8,6 +8,7 @@ public:
 	~TimerInterval();
 	bool UpdateTimer(float gt);
 	void Start();
+	void SetInterval(float);
 private:
 	bool hasStarted = false;
 	float timer = 0.0f;

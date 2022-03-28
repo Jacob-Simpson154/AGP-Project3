@@ -5,11 +5,11 @@ SpeedPowerup::SpeedPowerup()
 
 }
 
-SpeedPowerup::SpeedPowerup(float t, float m)
+SpeedPowerup::SpeedPowerup(float t, float m, float s)
 {
 	maxTimeActive = t;
 	speedMultiplier = m;
-	timer = TimerInterval(150.0f);
+	timer = TimerInterval(s);
 }
 
 SpeedPowerup::~SpeedPowerup()
@@ -19,7 +19,7 @@ SpeedPowerup::~SpeedPowerup()
 
 float SpeedPowerup::Consume() //Change this to a vec2 or an array of floats as we need to send two int values through
 {
-	if (hasBeenConsumed == false)
+	if (hasBeenConsumed == false && hasSpawnedIn == true)
 	{
 		hasBeenConsumed = true;
 		timer.Start();
@@ -31,6 +31,15 @@ float SpeedPowerup::Consume() //Change this to a vec2 or an array of floats as w
 
 void SpeedPowerup::Update(float gt)
 {
+	if (hasSpawnedIn == false)
+	{
+		if (timer.UpdateTimer(gt) == true)
+		{
+			hasSpawnedIn = true;
+			timer.SetInterval(150.0f);
+		}
+	}
+
 	if (hasBeenConsumed == true)
 	{
 		if (timer.UpdateTimer(gt) == true)

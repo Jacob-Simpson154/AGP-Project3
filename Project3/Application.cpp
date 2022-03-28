@@ -75,15 +75,15 @@ bool Application::Initialize()
 
 	for (int i = 0; i < 4; i++)
 	{
-		ammoBoxClass[i] = AmmoBox(10 * i);
-		healthBoxClass[i] = HealthBox(10 * i);
+		ammoBoxClass[i] = AmmoBox(10 * i, 10*i);
+		healthBoxClass[i] = HealthBox(10 * i, 10*i);
 	}
 	for (int i = 0; i < MAX_POWERUPS; ++i)
 	{
-		shieldBoxClass[i] = ShieldPowerup(20);
-		speedBoxClass[i] = SpeedPowerup(20, 3);
-		quadBoxClass[i] = QuadPowerup(20, 4);
-		infiniteBoxClass[i] = InfinitePowerup(15);
+		shieldBoxClass[i] = ShieldPowerup(20, 20*i);
+		speedBoxClass[i] = SpeedPowerup(20, 3, 20*i);
+		quadBoxClass[i] = QuadPowerup(20, 4, 20 *i);
+		infiniteBoxClass[i] = InfinitePowerup(15, 20 *i);
 	}
 
 	BuildAudio();
@@ -207,10 +207,11 @@ void Application::Update(const GameTimer& gt)
 	for (auto ri : mRitemLayer[(int)RenderLayer::AmmoBox])
 	{
 		ammoBoxClass[checkIndex].Update(gt.DeltaTime());
-		if (ammoBoxClass[checkIndex].hasBeenConsumed == false)
+		if (ammoBoxClass[checkIndex].hasBeenConsumed == false && ammoBoxClass[checkIndex].hasSpawnedIn == true)
 		{
 			ri->shouldRender = true;
 		}
+		else ri->shouldRender = false;
 		
 		checkIndex++;
 	}
@@ -218,10 +219,11 @@ void Application::Update(const GameTimer& gt)
 	for (auto ri : mRitemLayer[(int)RenderLayer::HealthBox])
 	{
 		healthBoxClass[checkIndex].Update(gt.DeltaTime());
-		if (healthBoxClass[checkIndex].hasBeenConsumed == false)
+		if (healthBoxClass[checkIndex].hasBeenConsumed == false && healthBoxClass[checkIndex].hasSpawnedIn==true)
 		{
 			ri->shouldRender = true;
 		}
+		else ri->shouldRender = false;
 
 		checkIndex++;
 	}
@@ -229,10 +231,11 @@ void Application::Update(const GameTimer& gt)
 	for (auto ri : mRitemLayer[(int)RenderLayer::ShieldBox])
 	{
 		shieldBoxClass[checkIndex].Update(gt.DeltaTime());
-		if (shieldBoxClass[checkIndex].hasBeenConsumed == false)
+		if (shieldBoxClass[checkIndex].hasBeenConsumed == false && shieldBoxClass[checkIndex].hasSpawnedIn == true)
 		{
 			ri->shouldRender = true;
 		}
+		else ri->shouldRender = false;
 
 		checkIndex++;
 	}
@@ -240,10 +243,11 @@ void Application::Update(const GameTimer& gt)
 	for (auto ri : mRitemLayer[(int)RenderLayer::SpeedBox])
 	{
 		speedBoxClass[checkIndex].Update(gt.DeltaTime());
-		if (speedBoxClass[checkIndex].hasBeenConsumed == false)
+		if (speedBoxClass[checkIndex].hasBeenConsumed == false && speedBoxClass[checkIndex].hasSpawnedIn == true)
 		{
 			ri->shouldRender = true;
 		}
+		else ri->shouldRender = false;
 
 		checkIndex++;
 	}
@@ -251,10 +255,11 @@ void Application::Update(const GameTimer& gt)
 	for (auto ri : mRitemLayer[(int)RenderLayer::QuadBox])
 	{
 		quadBoxClass[checkIndex].Update(gt.DeltaTime());
-		if (quadBoxClass[checkIndex].hasBeenConsumed == false)
+		if (quadBoxClass[checkIndex].hasBeenConsumed == false && quadBoxClass[checkIndex].hasSpawnedIn == true)
 		{
 			ri->shouldRender = true;
 		}
+		else ri->shouldRender = false;
 
 		checkIndex++;
 	}
@@ -262,10 +267,11 @@ void Application::Update(const GameTimer& gt)
 	for (auto ri : mRitemLayer[(int)RenderLayer::InfiniteBox])
 	{
 		infiniteBoxClass[checkIndex].Update(gt.DeltaTime());
-		if (infiniteBoxClass[checkIndex].hasBeenConsumed == false)
+		if (infiniteBoxClass[checkIndex].hasBeenConsumed == false && infiniteBoxClass[checkIndex].hasSpawnedIn == true)
 		{
 			ri->shouldRender = true;
 		}
+		else ri->shouldRender = false;
 
 		checkIndex++;
 	}
