@@ -9,6 +9,7 @@ InfinitePowerup::InfinitePowerup(float t, float s)
 {
 	maxTimeActive = t;
 	timer = TimerInterval(s);
+	timer.Start();
 }
 
 InfinitePowerup::~InfinitePowerup()

@@ -9,6 +9,7 @@ ShieldPowerup::ShieldPowerup(float t, float s)
 {
 	maxTimeActive = t;
 	timer = TimerInterval(s);
+	timer.Start();
 }
 
 ShieldPowerup::~ShieldPowerup()

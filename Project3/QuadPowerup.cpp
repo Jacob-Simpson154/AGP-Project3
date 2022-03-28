@@ -10,6 +10,7 @@ QuadPowerup::QuadPowerup(float t, float m, float s)
 	maxTimeActive = t;
 	damageMultiplier = m;
 	timer = TimerInterval(s);
+	timer.Start();
 }
 
 QuadPowerup::~QuadPowerup()

@@ -10,6 +10,7 @@ SpeedPowerup::SpeedPowerup(float t, float m, float s)
 	maxTimeActive = t;
 	speedMultiplier = m;
 	timer = TimerInterval(s);
+	timer.Start();
 }
 
 SpeedPowerup::~SpeedPowerup()
