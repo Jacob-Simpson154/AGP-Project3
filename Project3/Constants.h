@@ -36,7 +36,7 @@ struct NoramlisedAnimData
 namespace gc
 {
 	const size_t NUM_OBSTACLE = 4;
-	const size_t NUM_UI_SPRITES = 11;
+	const size_t NUM_UI_SPRITES = 12;
 
 	const ObstacleData OBSTACLE_DATA[NUM_OBSTACLE]
 	{
@@ -69,6 +69,7 @@ namespace gc
 		SPRITE_STAMINA_PLAYER_GRY,
 		SPRITE_OBJECTIVE,
 		SPRITE_CROSSHAIR,
+		SPRITE_ORB,
 		SPRITE_COUNT
 
 	};
@@ -91,7 +92,8 @@ namespace gc
 		"Data/Models/UI_BarGrey.obj", "uiStaminaYlwGeo", "uiStaminaYlw",			{00.00f,00.80f,00.00f}, // todo make green, scale based on remaining health
 		
 		"Data/Models/UI_Objective.obj", "uiObjectiveGeo", "uiObjective",			{00.00f,00.00f,00.00f},
-		"Data/Models/UI_CrossHair.obj", "uiCrossHairGeo", "uiCrossHair",			{00.00f,00.00f,00.00f}
+		"Data/Models/UI_CrossHair.obj", "uiCrossHairGeo", "uiCrossHair",			{00.00f,00.00f,00.00f},
+		"Data/Models/UI_Orb.obj", "uiOrbGeo", "uiOrb",								{00.10f,-1.00f,00.00f}
 	};
 	// for initialising sprites
 	const bool UI_SPRITE_DEFAULT_DISPLAY[NUM_UI_SPRITES]
@@ -99,6 +101,7 @@ namespace gc
 		true,
 		false,
 		false,
+		true,
 		true,
 		true,
 		true,
