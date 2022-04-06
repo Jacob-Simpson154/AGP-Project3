@@ -8,12 +8,10 @@ class Animation
 	// must be assigned before Update() call
 	DirectX::XMFLOAT4* pDestination;
 	int currentFrame = 0;
-	// updates frame when  = 0
 	float cdTimer = gc::ANIM_FRAME_TIME;
 	const NoramlisedAnimData* pData = nullptr;
 	float isAnimating = true;
 public:
-	// todo remove
 	Animation() = default;
 	// pass in pAnimData from constant.h
 	Animation(const NoramlisedAnimData* pAnimData, DirectX::XMFLOAT4* pDest = nullptr);
