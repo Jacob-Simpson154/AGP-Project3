@@ -35,25 +35,17 @@ void Boss::Movement(float dt)
 
 	XMFLOAT3 playerPos = playerObject->GetPosition3f();
 	XMFLOAT3 bossPos = pointObject->Pos;
-
-	//d = ((x2 - x1)^2 + (y2 - y1)^2 + (z2 - z1)^2) * 0.5    
-
 	float playerToBoss = ((pow((bossPos.x - playerPos.x), 2)) + (pow((bossPos.y - playerPos.y), 2)) + (pow((bossPos.z - playerPos.z), 2))) * 0.5f;
 
 	if (playerToBoss <= 10)
 	{
-		//tt += 1;
 		playerObject->SetPosition(XMFLOAT3(playerObject->GetPosition3f().x * 4, playerObject->GetPosition3f().y, playerObject->GetPosition3f().z * 4));
-		//XMVectorLerp();
 	}
 }
 
 void Boss::Update()
 {
 	Movement(0);
-	/*if (hp >= 75) Pattern_1();
-	else if (hp >= 50) Pattern_2();
-	else if (hp >= 25) Pattern_3();*/
 	spawn = hp == 100;
 }
 

@@ -69,3 +69,8 @@ void Weapon::AddAmmo(float percentage)
 	if (reserveAmmo > maxAmmo)
 		reserveAmmo = maxAmmo;
 }
+
+float Weapon::GetLoadedAmmo()
+{
+	return (float)loadedAmmo;
+}

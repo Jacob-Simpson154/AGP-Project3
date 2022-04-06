@@ -5,10 +5,6 @@
 #define OBSTACLE_TOGGLE 1
 #define UI_SPRITE_TOGGLE 1
 #define GS_TOGGLE 1
-// check the following structs match
-//	VertexIn (Geometry.hlsl)                   
-//	Point (FrameResource.h)                 
-//	mGeoInputLayout (App:BuildShadersAndInputLayout) 
 #define POINTS_SHADER_INPUT 1
 
 
@@ -132,7 +128,6 @@ void Application::OnResize()
 void Application::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
-	//SetCursorPos(mClientWidth / 2, mClientHeight / 2); 神 - Playing around this to try and make the cursor fixed to the screen
 
 	// Cycle through the circular frame resource array.
 	mCurrFrameResourceIndex = (mCurrFrameResourceIndex + 1) % gNumFrameResources;
@@ -174,12 +169,10 @@ void Application::Update(const GameTimer& gt)
 	spriteCtrl[gc::SPRITE_HEALTH_BOSS_GRN].SetXScale(this, max((float)bossStats.hp / (float)gc::BOSS_MAX_HEALTH,0.0f),gt.DeltaTime());
 	spriteCtrl[gc::SPRITE_STAMINA_PLAYER_YLW].SetXScale(this,max(playerStamina.Normalise(),0.0f),gt.DeltaTime());
 
-	// todo pass in appropriate values (positive floats only)
 	pointsDisplay.Update(this, gt.DeltaTime(), points);
 	timeDisplay.Update(this, gt.DeltaTime(), countdown.timeLeft);
 	ammoDisplay.Update(this, gt.DeltaTime(), currentGun.GetLoadedAmmo());
 
-	// hides objective sprite after set time
 	if (gt.TotalTime() > 5.0f)
 	{
 		spriteCtrl[gc::SPRITE_OBJECTIVE].SetDisplay(this, false);
@@ -382,8 +375,6 @@ void Application::OnMouseDown(WPARAM btnState, int x, int y)
 	if ((btnState & MK_LBUTTON) != 0)
 	{
 		Shoot();
-		//particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], mCamera->GetPosition3f(),5.0f);
-		//mMainPassCB.Shockwaves[0].Reset(cam.GetPosition3f());
 
 		if (tempCurrentHealth > 0.0f)
 		{
@@ -543,7 +534,6 @@ void Application::UpdateEnemies(float dt)
 void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
 {
 	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight(pos, terrainParam);
-	// on ground
 	position.y += scale.y * 0.5f;
 
 	{
@@ -557,7 +547,6 @@ void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
 			mGeoPoints.at(GeoPointIndex::ENEMY).at(enemySpawnIndex).Billboard = BillboardType::AXIS_ORIENTATION;
 			mobs.at(enemySpawnIndex).isActive = true;
 
-			// mob bb offset by +1
 			mobBox.at(enemySpawnIndex + 1) = BoundingBox(position, XMFLOAT3(scale.x, scale.y, scale.z));
 			enemySpawnIndex = (enemySpawnIndex + 1) % gc::NUM_GEO_POINTS[GeoPointIndex::ENEMY];
 		}
@@ -570,7 +559,6 @@ void Application::SpawnEnemy(const XMFLOAT3& pos, const XMFLOAT3& scale)
 void Application::SpawnBoss(const XMFLOAT3& pos, const XMFLOAT3& scale)
 {
 	DirectX::SimpleMath::Vector3 position = ApplyTerrainHeight(pos, terrainParam);
-	// on ground
 	position.y += scale.y * 0.5f;
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Pos = position;
 	mGeoPoints.at(GeoPointIndex::BOSS).at(0).Size = { scale.x,scale.y };
@@ -977,7 +965,6 @@ void Application::BuildTerrainGeometry()
 
 }
 
-// place after cb update
 void Application::UpdatePoints(const GameTimer& gt)
 {
 	for (size_t vb = 0; vb < GeoPointIndex::COUNT; vb++)
@@ -1092,7 +1079,6 @@ void Application::BuildPointsGeometry()
 
 			assert(mGeoPoints.at(vb).size() < 0x0000ffff);
 
-			// todo remove when setup configured
 			for (size_t v = 0; v < vertexCount; v++)
 			{
 				Vector3 pos = Vector3(RandFloat(-50.0f, 50.0f), 0.0f, RandFloat(-50.0f, 50.0f));
@@ -1390,8 +1376,6 @@ std::unique_ptr<RenderItem> Application::BuildRenderItem(UINT& objCBindex, const
 	auto rItem = std::make_unique<RenderItem>();
 	rItem->position = MathHelper::Identity4x4();
 	rItem->objectCBIndex = objCBindex;
-	// todo: uncomment if implementing instancing
-	//rItem->InstanceCount = 0;
 	rItem->geometry = mGeometries[geoName].get();
 	rItem->PrimitiveType = primitiveTopology;
 	rItem->IndexCount = rItem->geometry->DrawArgs[subGeoName].IndexCount;
@@ -1601,7 +1585,6 @@ void Application::BuildRenderItems()
 			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
 
 			Vector3 tempUVW = Vector2::Zero;
-			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
 
 			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
 			XMStoreFloat4x4(&uiChar->position,  Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
@@ -1621,7 +1604,6 @@ void Application::BuildRenderItems()
 			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
 
 			Vector3 tempUVW = Vector2::Zero;
-			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
 
 			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
 			XMStoreFloat4x4(&uiChar->position, Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
@@ -1641,7 +1623,6 @@ void Application::BuildRenderItems()
 			tempPos.x += gc::UI_CHAR_SPACING * (float)i;
 
 			Vector3 tempUVW = Vector2::Zero;
-			//tempUVW.y += gc::UI_CHAR_INC * (float)i;
 
 			auto uiChar = BuildRenderItem(objectCBIndex, gc::UI_CHAR.geoName, gc::UI_CHAR.subGeoName, "uiMat");
 			XMStoreFloat4x4(&uiChar->position, Matrix::CreateTranslation(gc::UI_CHAR.position + tempPos));
@@ -1662,13 +1643,6 @@ void Application::BuildRenderItems()
 
 		for (size_t i = 0; i < gc::UI_NUM_RITEM_WORD; i++)
 		{
-
-			// todo define init word pos in constants.h
-			// todo creates pointers to word ritem 
-			
-			//Vector3 tempPos = Vector3::Zero;
-			//tempPos.y += 0.06f * (float)i;
-
 			Vector3 tempUVW = Vector2::Zero;
 			tempUVW.y += gc::UI_WORD_INC * (float)i;
 
@@ -1688,7 +1662,6 @@ void Application::BuildRenderItems()
 #endif //UI_SPRITE_TOGGLE
 
 	{
-		// todo chage to appropriate render layer
 		RenderLayer gpRlayer[GeoPointIndex::COUNT]
 		{
 			RenderLayer::PointsGS,
@@ -1738,7 +1711,6 @@ void Application::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + ri->material->MatCBIndex * matCBByteSize;
 
 		cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
-		//cmdList->SetGraphicsRootConstantBufferView(1, matCBAddress);
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}
@@ -1888,7 +1860,7 @@ void Application::Shoot()
 			Point* p = (i == 0) ? &mGeoPoints.at(GeoPointIndex::BOSS).at(0) : &mGeoPoints.at(GeoPointIndex::ENEMY).at(pointIndex);
 
 
-			XMMATRIX W = Matrix::CreateTranslation(p->Pos);//   XMLoadFloat4x4(&ri->position);
+			XMMATRIX W = Matrix::CreateTranslation(p->Pos);
 			XMMATRIX invWorld = XMMatrixInverse(&XMMatrixDeterminant(W), W);
 
 			XMMATRIX toLocal = XMMatrixMultiply(invView, invWorld);
@@ -1909,7 +1881,6 @@ void Application::Shoot()
 					{
 						points += mMainPassCB.TotalTime * gc::POINTS_MULTI;
 					}
-					//mGameAudio.Play("BossTakeDamage", nullptr, false, mAudioVolume, RandomPitchValue());
 					particleCtrl.Explode(&mGeoPoints[GeoPointIndex::PARTICLE], { bossStats.posX, bossStats.posY, bossStats.posZ }, 3.0f);
 					
 					if (!quadActive) //Normal Damage Calculations
@@ -1961,12 +1932,6 @@ void Application::CheckCameraCollision()
 	pos = ApplyTerrainHeight(pos, terrainParam);
 	pos.y += 1.5f;
 
-	/*XMVECTOR C = mCamera->GetPosition();
-	
-	float cX = XMVectorGetX(C);
-	float cY = XMVectorGetY(C);
-	float cZ = XMVectorGetZ(C);*/
-
 	mCamera->SetPosition(pos);
 
 
@@ -2004,7 +1969,6 @@ void Application::CheckCameraCollision()
 
 			ri->shouldRender = false;
 			ri->NumFramesDirty = gNumFrameResources;
-			// normalise %
 			playerHealth.current += (healthBoxClass[counter].Consume() * 0.01f) / playerHealth.maximum;
 		}
 	}
@@ -2185,10 +2149,3 @@ const UINT Application::GetCbvSrvDescriptorSize() const
 {
 	return mCbvSrvDescriptorSize;
 }
-
-//RenderItem::RenderItem()
-//	:
-//	NumFramesDirty(gNumFrameResources)
-//{
-//}
-

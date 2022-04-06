@@ -12,11 +12,7 @@ public:
 	bool CanShoot();
 	void Shoot();
 	void AddAmmo(float percentage);
-	// float for display
-	float GetLoadedAmmo() 
-	{
-		return (float)loadedAmmo;
-	}
+	float GetLoadedAmmo();
 private:
 	std::string name = "Pistol";
 	int damage = 20;
